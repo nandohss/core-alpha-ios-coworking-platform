@@ -63,7 +63,14 @@ struct HomeView: View {
                 TopBarView()
                 CategoryMenuView(selected: $selectedCategory, categories: categories)
 
-                ZStack {
+                if viewModel.isLoading {
+                    ProgressView("Carregando espaços...")
+                        .padding()
+                } else if let error = viewModel.errorMessage {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .padding()
+                } else {
                     ScrollView {
                         LazyVStack(spacing: 16) {
                             ForEach(viewModel.coworkings) { coworking in
@@ -85,17 +92,6 @@ struct HomeView: View {
                             }
                         }
                         .padding()
-                    }
-
-                    if viewModel.isLoading {
-                        ProgressView("Carregando espaços...")
-                            .padding()
-                    }
-
-                    if let error = viewModel.errorMessage {
-                        Text(error)
-                            .foregroundColor(.red)
-                            .padding()
                     }
                 }
             }
