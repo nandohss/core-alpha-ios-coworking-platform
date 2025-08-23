@@ -1,0 +1,13 @@
+{
+  "resourceName": "s3c43d9bc4",
+  "policyUUID": "c43d9bc4",
+  "bucketName": "amplifycoworkingappb1e516e5e7f54784b0eff05a3d51",
+  "storageAccess": "auth",
+  "guestAccess": [],
+  "authAccess": [
+    "CREATE_AND_UPDATE",
+    "READ"
+  ],
+  "triggerFunction": "NONE",
+  "groupAccess": {}
+}

@@ -1,30 +1,34 @@
 import SwiftUI
 
 struct CategoryMenuView: View {
-    @Binding var selected: String
-    let categories: [HomeView.Category]
+    @Binding var selected: FormsConstants.CategoriaPrincipal
+    let categories: [FormsConstants.CategoriaPrincipal]
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 ForEach(categories) { category in
-                    Button {
-                        selected = category.name
-                    } label: {
-                        VStack {
-                            Image(systemName: category.icon)
-                            Text(category.name)
-                                .font(.caption)
-                        }
-                        .padding(8)
-                        .background(selected == category.name ? Color.blue.opacity(0.2) : Color.clear)
-                        .cornerRadius(8)
+                    VStack(spacing: 4) {
+                        Image(systemName: category.icon)
+                            .font(.system(size: 20))
+                            .foregroundColor(selected == category ? .black : .gray)
+
+                        Text(category.rawValue)
+                            .font(.footnote)
+                            .foregroundColor(selected == category ? .black : .gray)
                     }
-                    .buttonStyle(.plain)
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(selected == category ? Color.white : Color.clear)
+                    )
+                    .onTapGesture {
+                        selected = category
+                    }
                 }
             }
             .padding(.horizontal)
+            .padding(.top, 8)
         }
-        .padding(.vertical, 8)
     }
 }

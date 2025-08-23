@@ -10,13 +10,14 @@ struct DetalheReserva: Decodable {
 }
 
 // MARK: - ViewModel
+@MainActor
 class QRCodeReservaViewModel: ObservableObject {
     @Published var reserva: DetalheReserva? = nil
     @Published var isLoading = false
     @Published var errorMessage: String? = nil
 
     func carregarDetalheReserva(id: String) async {
-        guard let url = URL(string: "https://sua-api.amazonaws.com/prod/reserva/\(id)") else {
+        guard let url = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro/reserva/\(id)") else {
             self.errorMessage = "URL inválida"
             return
         }

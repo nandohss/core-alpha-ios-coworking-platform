@@ -1,0 +1,26 @@
+{
+  "staging": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-amplifycoworkingapp-staging-8a9eb-authRole",
+      "UnauthRoleArn": "arn:aws:iam::480984255530:role/amplify-amplifycoworkingapp-staging-8a9eb-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::480984255530:role/amplify-amplifycoworkingapp-staging-8a9eb-authRole",
+      "Region": "sa-east-1",
+      "DeploymentBucketName": "amplify-amplifycoworkingapp-staging-8a9eb-deployment",
+      "UnauthRoleName": "amplify-amplifycoworkingapp-staging-8a9eb-unauthRole",
+      "StackName": "amplify-amplifycoworkingapp-staging-8a9eb",
+      "StackId": "arn:aws:cloudformation:sa-east-1:480984255530:stack/amplify-amplifycoworkingapp-staging-8a9eb/64c79530-5d00-11f0-a187-02f26ee0d281",
+      "AmplifyAppId": "d389y2gtkalyau"
+    },
+    "categories": {
+      "auth": {
+        "amplifycoworkingapp": {}
+      },
+      "api": {
+        "amplifycoworkingapp": {}
+      },
+      "storage": {
+        "s3c43d9bc4": {}
+      }
+    }
+  }
+}
