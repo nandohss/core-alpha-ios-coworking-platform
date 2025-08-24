@@ -2,19 +2,23 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+
+    <!-- Força tema claro no app inteiro -->
+    <key>UIUserInterfaceStyle</key>
+    <string>Light</string>
+
+    <!-- URL Schemes (ex: Cognito redirect) -->
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
-            <!-- Identificador opcional; costuma ser o bundle ID do app -->
             <key>CFBundleURLName</key>
             <string>com.exemplo.coworking</string>
-
-            <!-- O scheme que o Cognito usará como redirect_uri -->
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>coworking</string>
             </array>
         </dict>
     </array>
+
 </dict>
 </plist>

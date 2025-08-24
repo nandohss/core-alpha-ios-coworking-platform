@@ -6,6 +6,17 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		CEA5C0122E5A9A5C00093B90 /* amplifyconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = CEA5BD872E5A959900093B90 /* amplifyconfiguration.json */; };
+		CEA5C0132E5A9A6600093B90 /* awsconfiguration.json in Resources */ = {isa = PBXBuildFile; fileRef = CEA5BD892E5A959900093B90 /* awsconfiguration.json */; };
+		CEA5E1C42E5AA59E00093B90 /* AWSAPIPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = CEA5E1C32E5AA59E00093B90 /* AWSAPIPlugin */; };
+		CEA5E1C62E5AA59E00093B90 /* AWSCloudWatchLoggingPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = CEA5E1C52E5AA59E00093B90 /* AWSCloudWatchLoggingPlugin */; };
+		CEA5E1C82E5AA59E00093B90 /* AWSCognitoAuthPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = CEA5E1C72E5AA59E00093B90 /* AWSCognitoAuthPlugin */; };
+		CEA5E1CA2E5AA59E00093B90 /* AWSDataStorePlugin in Frameworks */ = {isa = PBXBuildFile; productRef = CEA5E1C92E5AA59E00093B90 /* AWSDataStorePlugin */; };
+		CEA5E1CC2E5AA59E00093B90 /* AWSLocationGeoPlugin in Frameworks */ = {isa = PBXBuildFile; productRef = CEA5E1CB2E5AA59E00093B90 /* AWSLocationGeoPlugin */; };
+		CEA5E1CF2E5AA79300093B90 /* AWSS3StoragePlugin in Frameworks */ = {isa = PBXBuildFile; productRef = CEA5E1CE2E5AA79300093B90 /* AWSS3StoragePlugin */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		CEC7AC772E176FAE00A6A102 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,14 +35,173 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		CEA5BD872E5A959900093B90 /* amplifyconfiguration.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = amplifyconfiguration.json; sourceTree = "<group>"; };
+		CEA5BD882E5A959900093B90 /* AWSCLIV2.pkg */ = {isa = PBXFileReference; lastKnownFileType = file; path = AWSCLIV2.pkg; sourceTree = "<group>"; };
+		CEA5BD892E5A959900093B90 /* awsconfiguration.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = awsconfiguration.json; sourceTree = "<group>"; };
+		CEA5C0092E5A99C000093B90 /* coworking-product-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "coworking-product-Info.plist"; sourceTree = "<group>"; };
+		CEA5C00A2E5A99C000093B90 /* Podfile */ = {isa = PBXFileReference; lastKnownFileType = text; path = Podfile; sourceTree = "<group>"; };
 		CEC7AC692E176FAC00A6A102 /* coworking_product.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = coworking_product.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEC7AC762E176FAE00A6A102 /* coworking_productTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = coworking_productTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEC7AC802E176FAE00A6A102 /* coworking_productUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = coworking_productUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		CEA5C0072E5A997300093B90 /* Exceptions for "amplify" folder in "coworking_product" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				".config/local-aws-info.json",
+				".config/local-env-info.json",
+				".config/project-config.json",
+				"#current-cloud-backend/amplify-meta.json",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/cloudformation-template.json",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/parameters.json",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.auth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.init.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.postAuth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.auth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.auth.1.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.postAuth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.auth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.auth.1.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.init.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.postAuth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Query.getUser.auth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Query.getUser.postAuth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Query.getUser.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Query.getUser.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Query.listUsers.auth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Query.listUsers.postAuth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Query.listUsers.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Query.listUsers.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onCreateUser.auth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onCreateUser.postAuth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onCreateUser.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onCreateUser.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onDeleteUser.auth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onDeleteUser.postAuth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onDeleteUser.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onDeleteUser.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onUpdateUser.auth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onUpdateUser.postAuth.1.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onUpdateUser.req.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/resolvers/Subscription.onUpdateUser.res.vtl",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/schema.graphql",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/stacks/CustomResources.json",
+				"#current-cloud-backend/api/amplifycoworkingapp/build/stacks/User.json",
+				"#current-cloud-backend/api/amplifycoworkingapp/cli-inputs.json",
+				"#current-cloud-backend/api/amplifycoworkingapp/parameters.json",
+				"#current-cloud-backend/api/amplifycoworkingapp/resolvers/README.md",
+				"#current-cloud-backend/api/amplifycoworkingapp/schema.graphql",
+				"#current-cloud-backend/api/amplifycoworkingapp/stacks/CustomResources.json",
+				"#current-cloud-backend/api/amplifycoworkingapp/transform.conf.json",
+				"#current-cloud-backend/auth/amplifycoworkingapp/build/amplifycoworkingapp-cloudformation-template.json",
+				"#current-cloud-backend/auth/amplifycoworkingapp/build/parameters.json",
+				"#current-cloud-backend/auth/amplifycoworkingapp/cli-inputs.json",
+				"#current-cloud-backend/awscloudformation/build/api/amplifycoworkingapp/build/cloudformation-template.json",
+				"#current-cloud-backend/awscloudformation/build/auth/amplifycoworkingapp/build/amplifycoworkingapp-cloudformation-template.json",
+				"#current-cloud-backend/awscloudformation/build/awscloudformation/build/root-cloudformation-stack.json",
+				"#current-cloud-backend/awscloudformation/build/root-cloudformation-stack.json",
+				"#current-cloud-backend/awscloudformation/build/storage/s3c43d9bc4/build/cloudformation-template.json",
+				"#current-cloud-backend/backend-config.json",
+				"#current-cloud-backend/storage/s3c43d9bc4/build/cloudformation-template.json",
+				"#current-cloud-backend/storage/s3c43d9bc4/build/parameters.json",
+				"#current-cloud-backend/storage/s3c43d9bc4/cli-inputs.json",
+				"#current-cloud-backend/tags.json",
+				"backend/amplify-meta.json",
+				"backend/api/amplifycoworkingapp/build/cloudformation-template.json",
+				backend/api/amplifycoworkingapp/build/parameters.json,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.auth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.init.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.postAuth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.createUser.res.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.auth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.auth.1.res.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.postAuth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.deleteUser.res.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.auth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.auth.1.res.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.init.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.postAuth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Mutation.updateUser.res.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Query.getUser.auth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Query.getUser.postAuth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Query.getUser.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Query.getUser.res.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Query.listUsers.auth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Query.listUsers.postAuth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Query.listUsers.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Query.listUsers.res.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onCreateUser.auth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onCreateUser.postAuth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onCreateUser.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onCreateUser.res.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onDeleteUser.auth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onDeleteUser.postAuth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onDeleteUser.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onDeleteUser.res.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onUpdateUser.auth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onUpdateUser.postAuth.1.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onUpdateUser.req.vtl,
+				backend/api/amplifycoworkingapp/build/resolvers/Subscription.onUpdateUser.res.vtl,
+				backend/api/amplifycoworkingapp/build/schema.graphql,
+				backend/api/amplifycoworkingapp/build/stacks/CustomResources.json,
+				backend/api/amplifycoworkingapp/build/stacks/User.json,
+				"backend/api/amplifycoworkingapp/cli-inputs.json",
+				backend/api/amplifycoworkingapp/parameters.json,
+				backend/api/amplifycoworkingapp/resolvers/README.md,
+				backend/api/amplifycoworkingapp/schema.graphql,
+				backend/api/amplifycoworkingapp/stacks/CustomResources.json,
+				backend/api/amplifycoworkingapp/transform.conf.json,
+				"backend/auth/amplifycoworkingapp/build/amplifycoworkingapp-cloudformation-template.json",
+				backend/auth/amplifycoworkingapp/build/parameters.json,
+				"backend/auth/amplifycoworkingapp/cli-inputs.json",
+				"backend/awscloudformation/build/api/amplifycoworkingapp/build/cloudformation-template.json",
+				"backend/awscloudformation/build/auth/amplifycoworkingapp/build/amplifycoworkingapp-cloudformation-template.json",
+				"backend/awscloudformation/build/awscloudformation/build/root-cloudformation-stack.json",
+				"backend/awscloudformation/build/root-cloudformation-stack.json",
+				"backend/awscloudformation/build/storage/s3c43d9bc4/build/cloudformation-template.json",
+				"backend/backend-config.json",
+				"backend/storage/s3c43d9bc4/build/cloudformation-template.json",
+				backend/storage/s3c43d9bc4/build/parameters.json,
+				"backend/storage/s3c43d9bc4/cli-inputs.json",
+				backend/tags.json,
+				cli.json,
+				"team-provider-info.json",
+			);
+			target = CEC7AC682E176FAC00A6A102 /* coworking_product */;
+		};
+		CEA5C0082E5A997300093B90 /* Exceptions for "coworking_product" folder in "coworking_product" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets.xcassets,
+			);
+			target = CEC7AC682E176FAC00A6A102 /* coworking_product */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		CEA5C0052E5A992E00093B90 /* amplify */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CEA5C0072E5A997300093B90 /* Exceptions for "amplify" folder in "coworking_product" target */,
+			);
+			path = amplify;
+			sourceTree = "<group>";
+		};
 		CEC7AC6B2E176FAC00A6A102 /* coworking_product */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CEA5C0082E5A997300093B90 /* Exceptions for "coworking_product" folder in "coworking_product" target */,
+			);
 			path = coworking_product;
 			sourceTree = "<group>";
 		};
@@ -52,6 +222,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEA5E1C42E5AA59E00093B90 /* AWSAPIPlugin in Frameworks */,
+				CEA5E1CC2E5AA59E00093B90 /* AWSLocationGeoPlugin in Frameworks */,
+				CEA5E1C62E5AA59E00093B90 /* AWSCloudWatchLoggingPlugin in Frameworks */,
+				CEA5E1C82E5AA59E00093B90 /* AWSCognitoAuthPlugin in Frameworks */,
+				CEA5E1CA2E5AA59E00093B90 /* AWSDataStorePlugin in Frameworks */,
+				CEA5E1CF2E5AA79300093B90 /* AWSS3StoragePlugin in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +248,26 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CEA5E1CD2E5AA79300093B90 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CEC7AC602E176FAC00A6A102 = {
 			isa = PBXGroup;
 			children = (
+				CEA5C0092E5A99C000093B90 /* coworking-product-Info.plist */,
+				CEA5C00A2E5A99C000093B90 /* Podfile */,
+				CEA5C0052E5A992E00093B90 /* amplify */,
+				CEA5BD872E5A959900093B90 /* amplifyconfiguration.json */,
+				CEA5BD882E5A959900093B90 /* AWSCLIV2.pkg */,
+				CEA5BD892E5A959900093B90 /* awsconfiguration.json */,
 				CEC7AC6B2E176FAC00A6A102 /* coworking_product */,
 				CEC7AC792E176FAE00A6A102 /* coworking_productTests */,
 				CEC7AC832E176FAE00A6A102 /* coworking_productUITests */,
+				CEA5E1CD2E5AA79300093B90 /* Frameworks */,
 				CEC7AC6A2E176FAC00A6A102 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,18 +291,17 @@
 			buildPhases = (
 				CEC7AC652E176FAC00A6A102 /* Sources */,
 				CEC7AC662E176FAC00A6A102 /* Frameworks */,
-				CEC7AC672E176FAC00A6A102 /* Resources */,
+				CEA5C0062E5A997300093B90 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				CEA5C0052E5A992E00093B90 /* amplify */,
 				CEC7AC6B2E176FAC00A6A102 /* coworking_product */,
 			);
 			name = coworking_product;
-			packageProductDependencies = (
-			);
 			productName = coworking_product;
 			productReference = CEC7AC692E176FAC00A6A102 /* coworking_product.app */;
 			productType = "com.apple.product-type.application";
@@ -134,8 +323,6 @@
 				CEC7AC792E176FAE00A6A102 /* coworking_productTests */,
 			);
 			name = coworking_productTests;
-			packageProductDependencies = (
-			);
 			productName = coworking_productTests;
 			productReference = CEC7AC762E176FAE00A6A102 /* coworking_productTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -157,8 +344,6 @@
 				CEC7AC832E176FAE00A6A102 /* coworking_productUITests */,
 			);
 			name = coworking_productUITests;
-			packageProductDependencies = (
-			);
 			productName = coworking_productUITests;
 			productReference = CEC7AC802E176FAE00A6A102 /* coworking_productUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -195,6 +380,9 @@
 			);
 			mainGroup = CEC7AC602E176FAC00A6A102;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CEA5E1C22E5AA59E00093B90 /* XCRemoteSwiftPackageReference "amplify-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CEC7AC6A2E176FAC00A6A102 /* Products */;
 			projectDirPath = "";
@@ -208,10 +396,12 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		CEC7AC672E176FAC00A6A102 /* Resources */ = {
+		CEA5C0062E5A997300093B90 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEA5C0132E5A9A6600093B90 /* awsconfiguration.json in Resources */,
+				CEA5C0122E5A9A5C00093B90 /* amplifyconfiguration.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -398,6 +588,7 @@
 				DEVELOPMENT_TEAM = 8V5LBY3ZS7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "coworking-product-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -427,6 +618,7 @@
 				DEVELOPMENT_TEAM = 8V5LBY3ZS7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "coworking-product-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -562,6 +754,50 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CEA5E1C22E5AA59E00093B90 /* XCRemoteSwiftPackageReference "amplify-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/aws-amplify/amplify-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.50.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CEA5E1C32E5AA59E00093B90 /* AWSAPIPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA5E1C22E5AA59E00093B90 /* XCRemoteSwiftPackageReference "amplify-swift" */;
+			productName = AWSAPIPlugin;
+		};
+		CEA5E1C52E5AA59E00093B90 /* AWSCloudWatchLoggingPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA5E1C22E5AA59E00093B90 /* XCRemoteSwiftPackageReference "amplify-swift" */;
+			productName = AWSCloudWatchLoggingPlugin;
+		};
+		CEA5E1C72E5AA59E00093B90 /* AWSCognitoAuthPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA5E1C22E5AA59E00093B90 /* XCRemoteSwiftPackageReference "amplify-swift" */;
+			productName = AWSCognitoAuthPlugin;
+		};
+		CEA5E1C92E5AA59E00093B90 /* AWSDataStorePlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA5E1C22E5AA59E00093B90 /* XCRemoteSwiftPackageReference "amplify-swift" */;
+			productName = AWSDataStorePlugin;
+		};
+		CEA5E1CB2E5AA59E00093B90 /* AWSLocationGeoPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA5E1C22E5AA59E00093B90 /* XCRemoteSwiftPackageReference "amplify-swift" */;
+			productName = AWSLocationGeoPlugin;
+		};
+		CEA5E1CE2E5AA79300093B90 /* AWSS3StoragePlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA5E1C22E5AA59E00093B90 /* XCRemoteSwiftPackageReference "amplify-swift" */;
+			productName = AWSS3StoragePlugin;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CEC7AC612E176FAC00A6A102 /* Project object */;
 }
