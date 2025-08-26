@@ -107,3 +107,130 @@ class APIService {
     }
 
 }
+
+// MARK: - Modelos da API
+struct SpaceDTO: Decodable, Identifiable {
+    var id: String { spaceId }
+
+    let spaceId: String
+    let name: String
+    let city: String?
+    let country: String?
+    let district: String?
+    let capacity: Int?
+    let amenities: [String]?
+    let availability: Bool?
+    let categoria: String?
+    let subcategoria: String?
+    let descricao: String?
+    let regras: String?
+    let diasSemana: [String]?
+    let horaInicio: String?
+    let horaFim: String?
+    let precoHora: Double?   // ← era String?
+    let precoDia: Double?    // ← era String?
+    let hoster: String
+    let imagemUrl: String?
+}
+
+// Se precisar apresentar:
+extension SpaceDTO {
+    var precoHoraFormatado: String {
+        guard let v = precoHora else { return "—" }
+        return NumberFormatter.currencyBR.string(from: NSNumber(value: v)) ?? "R$ \(v)"
+    }
+    var precoDiaFormatado: String {
+        guard let v = precoDia else { return "—" }
+        return NumberFormatter.currencyBR.string(from: NSNumber(value: v)) ?? "R$ \(v)"
+    }
+}
+
+extension NumberFormatter {
+    static let currencyBR: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.locale = Locale(identifier: "pt_BR")
+        return f
+    }()
+}
+
+
+// Caso a API retorne um envelope { items: [...] } use esse:
+struct SpaceListEnvelope: Decodable {
+    let items: [SpaceDTO]
+}
+
+extension APIService {
+
+    /// Lista os espaços cadastrados por um hoster (userId).
+    static func listarEspacosDoHoster(userId: String, completion: @escaping (Result<[SpaceDTO], Error>) -> Void) {
+        // preferir path /spaces/hoster/{userId}
+        let base = "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro"
+        let encoded = userId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? userId
+        let primaryURL = URL(string: "\(base)/spaces/hoster/\(encoded)")!
+        var request = URLRequest(url: primaryURL)
+        request.httpMethod = "GET"
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            // fallback para query ?hoster=... se a rota ainda não estiver publicada
+            if let http = response as? HTTPURLResponse, http.statusCode == 400 || http.statusCode == 404 {
+                let query = URL(string: "\(base)/spaces?hoster=\(encoded)")!
+                var req2 = URLRequest(url: query)
+                req2.httpMethod = "GET"
+                URLSession.shared.dataTask(with: req2) { data, response, error in
+                    Self.decodeSpaces(data: data, response: response, error: error, completion: completion)
+                }.resume()
+                return
+            }
+            Self.decodeSpaces(data: data, response: response, error: error, completion: completion)
+        }.resume()
+    }
+
+    private static func decodeSpaces(data: Data?, response: URLResponse?, error: Error?, completion: @escaping (Result<[SpaceDTO], Error>) -> Void) {
+        if let error = error { return completion(.failure(error)) }
+        guard let http = response as? HTTPURLResponse, let data = data else {
+            return completion(.failure(NSError(domain: "API", code: -2, userInfo: [NSLocalizedDescriptionKey: "Resposta inválida"])))
+        }
+        guard (200...299).contains(http.statusCode) else {
+            let msg = String(data: data, encoding: .utf8) ?? "Erro \(http.statusCode)"
+            return completion(.failure(NSError(domain: "API", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])))
+        }
+        do {
+            if let list = try? JSONDecoder().decode([SpaceDTO].self, from: data) {
+                completion(.success(list))
+            } else {
+                let envelope = try JSONDecoder().decode(SpaceListEnvelope.self, from: data)
+                completion(.success(envelope.items))
+            }
+        } catch {
+            completion(.failure(error))
+        }
+    }
+
+
+    /// Exclui um espaço pelo `spaceId`.
+    static func deletarEspaco(spaceId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard
+            let encoded = spaceId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+            let url = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro/spaces?spaceId=\(encoded)")
+        else {
+            completion(.failure(NSError(domain: "API", code: -1, userInfo: [NSLocalizedDescriptionKey: "URL inválida"])))
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error { return completion(.failure(error)) }
+            guard let http = response as? HTTPURLResponse else {
+                return completion(.failure(NSError(domain: "API", code: -2, userInfo: [NSLocalizedDescriptionKey: "Resposta inválida"])))
+            }
+            guard (200...299).contains(http.statusCode) else {
+                let msg = data.flatMap { String(data: $0, encoding: .utf8) } ?? "Erro \(http.statusCode)"
+                return completion(.failure(NSError(domain: "API", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])))
+            }
+            completion(.success(()))
+        }.resume()
+    }
+}

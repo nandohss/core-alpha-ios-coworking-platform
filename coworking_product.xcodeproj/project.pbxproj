@@ -179,13 +179,6 @@
 			);
 			target = CEC7AC682E176FAC00A6A102 /* coworking_product */;
 		};
-		CEA5C0082E5A997300093B90 /* Exceptions for "coworking_product" folder in "coworking_product" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Assets.xcassets,
-			);
-			target = CEC7AC682E176FAC00A6A102 /* coworking_product */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -199,9 +192,6 @@
 		};
 		CEC7AC6B2E176FAC00A6A102 /* coworking_product */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				CEA5C0082E5A997300093B90 /* Exceptions for "coworking_product" folder in "coworking_product" target */,
-			);
 			path = coworking_product;
 			sourceTree = "<group>";
 		};
