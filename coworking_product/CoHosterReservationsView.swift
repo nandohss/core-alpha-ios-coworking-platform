@@ -1,54 +1,75 @@
 import SwiftUI
+import Foundation
+
+@MainActor
+class CoHosterReservationsViewModel: ObservableObject {
+    @Published var reservations: [ReservationDTO] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String? = nil
+
+    func fetchReservations(hosterId: String, status: ReservationDTO.Status? = nil) async {
+        let trimmedId = hosterId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedId.isEmpty else {
+            self.errorMessage = "ID do hoster ausente. Faça login novamente."
+            self.reservations = []
+            return
+        }
+        
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            self.reservations = try await APIService.fetchCoHosterReservations(hosterId: hosterId, status: status)
+        } catch {
+            self.errorMessage = "Erro ao carregar reservas: \(error.localizedDescription)"
+            self.reservations = []
+        }
+    }
+}
 
 struct CoHosterReservationsView: View {
-    // MARK: - Models
-    struct Reservation: Identifiable, Hashable {
-        enum Status: String, CaseIterable {
-            case confirmed = "Confirmada"
-            case pending   = "Pendente"
-            case canceled  = "Cancelada"
-        }
-        let id: UUID = .init()
-        let bookingCode: String
-        let spaceId: String
-        let spaceName: String
-        let guestName: String
-        let start: Date
-        let end: Date
-        let total: Decimal
-        let status: Status
-    }
-
-    struct SpaceSection: Identifiable, Hashable {
-        let id: String          // spaceId
-        let name: String        // spaceName
-        let items: [Reservation]
-    }
-
     // MARK: - State (mock — troque pelo loader real/Amplify)
     @State private var searchText: String = ""
-    @State private var statusFilter: Reservation.Status? = nil
-    @State private var reservations: [Reservation] = sampleData
+    @State private var statusFilter: ReservationDTO.Status? = nil
+    @StateObject private var viewModel = CoHosterReservationsViewModel()
 
     // MARK: - Derived
-    private var filtered: [Reservation] {
-        reservations.filter { r in
+
+    private var filtered: [ReservationDTO] {
+        viewModel.reservations.filter { r in
             let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
             let matchesSearch = q.isEmpty
-                || r.spaceName.localizedCaseInsensitiveContains(q)
-                || r.guestName.localizedCaseInsensitiveContains(q)
-                || r.bookingCode.localizedCaseInsensitiveContains(q)
+                // Como ReservationDTO do APIService não tem esses campos, usamos placeholders para filtro
+                || r.spaceId.localizedCaseInsensitiveContains(q)
+                || r.userId.localizedCaseInsensitiveContains(q)
+                || r.id.localizedCaseInsensitiveContains(q)
             let matchesStatus = statusFilter == nil || r.status == statusFilter
             return matchesSearch && matchesStatus
         }
-        .sorted { $0.start < $1.start }
+        .sorted { $0.startDate < $1.startDate }
+    }
+
+    private struct SpaceSection: Identifiable, Equatable, Hashable {
+        let id: String          // spaceId
+        let name: String        // espaço não vem no DTO, placeholder ou lookup externo
+        let items: [ReservationDTO]
+
+        static func == (lhs: SpaceSection, rhs: SpaceSection) -> Bool {
+            lhs.id == rhs.id && lhs.name == rhs.name && lhs.items == rhs.items
+        }
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(id)
+            hasher.combine(name)
+            hasher.combine(items)
+        }
     }
 
     private var grouped: [SpaceSection] {
-        let byId: [String: [Reservation]] = Dictionary(grouping: filtered, by: { $0.spaceId })
+        let byId: [String: [ReservationDTO]] = Dictionary(grouping: filtered, by: { $0.spaceId })
         let sections: [SpaceSection] = byId.compactMap { (spaceId, items) in
-            let name = items.first?.spaceName ?? "Sem nome"
-            let sortedItems = items.sorted { $0.start < $1.start }
+            // Como spaceName não está no DTO, usamos placeholder "—" ou espaçoId
+            let name = "—" // Aqui pode-se fazer lookup se disponível
+            let sortedItems = items.sorted { $0.startDate < $1.startDate }
             return SpaceSection(id: spaceId, name: name, items: sortedItems)
         }
         return sections.sorted {
@@ -84,8 +105,8 @@ struct CoHosterReservationsView: View {
                 Menu {
                     Button("Todos") { statusFilter = nil }
                     Divider()
-                    ForEach(Reservation.Status.allCases, id: \.self) { s in
-                        Button(s.rawValue) { statusFilter = s }
+                    ForEach(ReservationDTO.Status.allCases, id: \.self) { s in
+                        Button(s.rawValue.capitalized) { statusFilter = s }
                     }
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease.circle")
@@ -154,12 +175,38 @@ struct CoHosterReservationsView: View {
             .ignoresSafeArea(.keyboard, edges: .bottom)
             .animation(.easeInOut(duration: 0.2), value: grouped.count)
         }
+        .overlay(alignment: .center) {
+            if viewModel.isLoading {
+                ZStack {
+                    Color.black.opacity(0.15).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                        Text("Carregando...")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(16)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                }
+                .transition(.opacity)
+            }
+        }
+        .task {
+            let coHosterId = UserDefaults.standard.string(forKey: "userId") ?? ""
+            await viewModel.fetchReservations(hosterId: coHosterId, status: statusFilter)
+        }
+        .alert("Erro", isPresented: .constant(viewModel.errorMessage != nil)) {
+            Button("OK") { viewModel.errorMessage = nil }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
     }
 }
 
 // MARK: - Row
 private struct ReservationRow: View {
-    let reservation: CoHosterReservationsView.Reservation
+    let reservation: ReservationDTO
     let greenPrimary: Color
     let grayPrimary: Color
 
@@ -167,18 +214,27 @@ private struct ReservationRow: View {
         HStack(alignment: .top, spacing: 12) {
             // Data “avatar”
             VStack {
-                Text(dayString(reservation.start))
-                    .font(.system(size: 20, weight: .bold))
-                Text(monthString(reservation.start))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                if let start = reservation.startDate.toDate() {
+                    Text(dayString(start))
+                        .font(.system(size: 20, weight: .bold))
+                    Text(monthString(start))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    Text("?")
+                        .font(.system(size: 20, weight: .bold))
+                    Text("???")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
             .frame(width: 52, height: 52)
             .background(RoundedRectangle(cornerRadius: 10).fill(Color(.secondarySystemBackground)))
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(reservation.guestName)
+                    // Como guestName não existe, usamos userId como placeholder
+                    Text(reservation.userName ?? reservation.userEmail ?? reservation.userId)
                         .font(.headline)
                         .lineLimit(1)
                     Spacer()
@@ -188,11 +244,19 @@ private struct ReservationRow: View {
                         grayPrimary: grayPrimary
                     )
                 }
-                Text("\(dateRange(reservation.start, reservation.end))")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                Text("Código: \(reservation.bookingCode)")
+                if let start = reservation.startDate.toDate(),
+                   let end = reservation.endDate.toDate() {
+                    Text(dateRange(start, end))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                } else {
+                    Text("Data inválida")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                Text("Código: \(reservation.id)") // bookingCode não existe - id usado como placeholder
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -221,7 +285,7 @@ private struct ReservationRow: View {
 
 // MARK: - Chip de Status (estética igual a “Disponível/Ocupado”)
 private struct StatusChip: View {
-    let status: CoHosterReservationsView.Reservation.Status
+    let status: ReservationDTO.Status
     let greenPrimary: Color     // Disponível
     let grayPrimary: Color      // Ocupado
 
@@ -231,6 +295,13 @@ private struct StatusChip: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(Capsule().fill(bgColor))
+            .overlay(
+                Group {
+                    if case .reserved = status {
+                        Capsule().stroke(greenPrimary.opacity(0.6), lineWidth: 1)
+                    }
+                }
+            )
             .foregroundColor(fgColor)
     }
 
@@ -239,6 +310,8 @@ private struct StatusChip: View {
         case .confirmed: return "Confirmada"
         case .pending:   return "Pendente"
         case .canceled:  return "Cancelada"
+        case .refused:   return "Recusada"
+        case .reserved:  return "Reservado"
         }
     }
     private var fgColor: Color {
@@ -246,6 +319,8 @@ private struct StatusChip: View {
         case .confirmed: return greenPrimary
         case .pending:   return grayPrimary
         case .canceled:  return .red
+        case .refused:   return .red
+        case .reserved:  return greenPrimary
         }
     }
     private var bgColor: Color {
@@ -253,32 +328,17 @@ private struct StatusChip: View {
         case .confirmed: return greenPrimary.opacity(0.12)
         case .pending:   return grayPrimary.opacity(0.12)
         case .canceled:  return Color.red.opacity(0.12)
+        case .refused:   return Color.red.opacity(0.12)
+        case .reserved:  return greenPrimary.opacity(0.06)
         }
     }
 }
 
-// MARK: - Mock (troque por seu backend)
-extension CoHosterReservationsView {
-    static let sampleData: [Reservation] = [
-        .init(bookingCode: "BKG-1042", spaceId: "spc-1", spaceName: "Sala de Reunião A",
-              guestName: "Ana Lima",
-              start: Date().addingTimeInterval(3600),
-              end: Date().addingTimeInterval(7200),
-              total: 150, status: .confirmed),
-        .init(bookingCode: "BKG-1043", spaceId: "spc-1", spaceName: "Sala de Reunião A",
-              guestName: "Carlos Souza",
-              start: Date().addingTimeInterval(86000),
-              end: Date().addingTimeInterval(92000),
-              total: 150, status: .pending),
-        .init(bookingCode: "BKG-2048", spaceId: "spc-2", spaceName: "Open Workspace",
-              guestName: "Mariana P.",
-              start: Date().addingTimeInterval(172800),
-              end: Date().addingTimeInterval(176400),
-              total: 80, status: .confirmed),
-        .init(bookingCode: "BKG-3099", spaceId: "spc-3", spaceName: "Auditório",
-              guestName: "João Pedro",
-              start: Date().addingTimeInterval(260000),
-              end: Date().addingTimeInterval(268000),
-              total: 500, status: .canceled)
-    ]
+// MARK: - String extension to convert ISO8601 date strings to Date
+fileprivate extension String {
+    func toDate() -> Date? {
+        // Assuming the dates are ISO8601 formatted strings with time zone
+        let isoFormatter = ISO8601DateFormatter()
+        return isoFormatter.date(from: self)
+    }
 }

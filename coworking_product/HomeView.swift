@@ -1,5 +1,40 @@
 import SwiftUI
 
+// Simple shimmer effect
+fileprivate struct ShimmerView: View {
+    @State private var start: CGFloat = -1
+    @State private var end: CGFloat = 0
+    var body: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color.gray.opacity(0.2),
+                Color.gray.opacity(0.35),
+                Color.gray.opacity(0.2)
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+        .mask(
+            Rectangle()
+                .fill(
+                    LinearGradient(colors: [.black.opacity(0.0), .black, .black.opacity(0.0)], startPoint: .leading, endPoint: .trailing)
+                )
+                .offset(x: UIScreen.main.bounds.width * start)
+        )
+        .onAppear {
+            withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                start = 1.5
+            }
+        }
+    }
+}
+
+fileprivate extension View {
+    func shimmered() -> some View {
+        self.overlay(ShimmerView().blendMode(.plusLighter))
+    }
+}
+
 // MARK: - ViewModel
 @MainActor
 class CoworkingViewModel: ObservableObject {
@@ -57,25 +92,63 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Top fixed area
                 TopBarView(searchText: $searchText)
                     .animation(nil, value: searchText)
+                    .background(Color(.systemBackground))
+                    .overlay(Divider().opacity(0.5), alignment: .bottom)
+                    .zIndex(2)
 
-                // Categoria por ícone (passando enum diretamente)
+                // Fixed category menu (does not scroll)
                 CategoryMenuView(
                     selected: $selectedCategory,
                     categories: FormsConstants.CategoriaPrincipal.allCases
                 )
+                .padding(.vertical, 8)
+                .background(Color(.systemBackground))
+                .overlay(Divider().opacity(0.5), alignment: .bottom)
+                .zIndex(1)
 
-                if viewModel.isLoading {
-                    ProgressView("Carregando espaços...")
-                        .padding()
-                } else if let error = viewModel.errorMessage {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .padding()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
+                // Scrollable content area
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        if viewModel.isLoading {
+                            // Skeleton placeholders while loading (with shimmer)
+                            ForEach(0..<6, id: \.self) { _ in
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.gray.opacity(0.15))
+                                    .frame(height: 180)
+                                    .overlay(
+                                        VStack(alignment: .leading, spacing: 12) {
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(Color.gray.opacity(0.2))
+                                                .frame(height: 100)
+
+                                            HStack(spacing: 12) {
+                                                RoundedRectangle(cornerRadius: 6)
+                                                    .fill(Color.gray.opacity(0.2))
+                                                    .frame(width: 120, height: 14)
+                                                Spacer()
+                                                RoundedRectangle(cornerRadius: 6)
+                                                    .fill(Color.gray.opacity(0.2))
+                                                    .frame(width: 80, height: 14)
+                                            }
+
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .fill(Color.gray.opacity(0.2))
+                                                .frame(width: 160, height: 12)
+                                        }
+                                        .padding()
+                                    )
+                                    .redacted(reason: .placeholder)
+                                    .shimmered()
+                            }
+                        } else if let error = viewModel.errorMessage {
+                            Text(error)
+                                .foregroundColor(.red)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                        } else {
                             if filteredCoworkings.isEmpty {
                                 VStack(spacing: 12) {
                                     Image(systemName: "magnifyingglass.circle.fill")
@@ -100,7 +173,7 @@ struct HomeView: View {
                                 .background(Color.white)
                                 .cornerRadius(16)
                                 .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-                                .padding(.top, 40)
+                                .padding(.top, 24)
                                 .padding(.horizontal)
                             } else {
                                 ForEach(filteredCoworkings) { coworking in
@@ -124,7 +197,12 @@ struct HomeView: View {
 
                             Spacer().frame(height: 32)
                         }
-                        .padding()
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 12)
+                    .padding(.bottom)
+                    .refreshable {
+                        await viewModel.fetchCoworkings()
                     }
                 }
             }

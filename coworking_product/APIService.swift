@@ -1,5 +1,26 @@
 import Foundation
 
+struct ReservationDTO: Decodable, Identifiable, Equatable, Hashable {
+    enum Status: String, Decodable, CaseIterable {
+        case pending = "PENDING"
+        case confirmed = "CONFIRMED"
+        case canceled = "CANCELED"
+        case refused = "REFUSED"
+        case reserved = "reserved" // Se o backend pode retornar assim!
+    }
+    
+    let id: String
+    let spaceId: String
+    let userId: String
+    let hosterId: String
+    let startDate: String
+    let endDate: String
+    let status: Status
+    let spaceName: String?
+    let userName: String?
+    let userEmail: String?
+}
+
 class APIService {
     static func enviarFormularioEspaco(_ form: FormData, userId: String, spaceId: String, completion: @escaping (Bool, String?) -> Void){
         guard let url = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro/spaces") else {
@@ -26,10 +47,10 @@ class APIService {
             "diasSemana": Array(form.diasDisponiveis),
             "horaInicio": formatter.string(from: form.horarioInicio),
             "horaFim": formatter.string(from: form.horarioFim),
-            "precoHora": form.precoPorHora.replacingOccurrences(of: "[^0-9,]", with: "", options: .regularExpression).replacingOccurrences(of: ",", with: "."),
-            "precoDia": form.precoPorDia.replacingOccurrences(of: "[^0-9,]", with: "", options: .regularExpression).replacingOccurrences(of: ",", with: "."),
+            "precoHora": form.precoPorHora.replacingOccurrences(of: "[^0-9,]", with: "", options: String.CompareOptions.regularExpression).replacingOccurrences(of: ",", with: "."),
+            "precoDia": form.precoPorDia.replacingOccurrences(of: "[^0-9,]", with: "", options: String.CompareOptions.regularExpression).replacingOccurrences(of: ",", with: "."),
             "hoster": userId,
-            "imagemUrl": form.imagemUrl?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            "imagemUrl": form.imagemUrl?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
         ]
 
         if let jsonData = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted),
@@ -106,6 +127,37 @@ class APIService {
         }.resume()
     }
 
+    // Reservas para Co-Hoster (Estratégia B: GET /reservations?coHosterId=...&status=...)
+    static func fetchCoHosterReservations(hosterId: String, status: ReservationDTO.Status? = nil) async throws -> [ReservationDTO] {
+        let base = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro")!
+        var components = URLComponents(url: base.appendingPathComponent("reservations"), resolvingAgainstBaseURL: false)!
+        var items: [URLQueryItem] = [URLQueryItem(name: "hosterId", value: hosterId)]
+        if let status { items.append(URLQueryItem(name: "status", value: status.rawValue)) }
+        components.queryItems = items
+        guard let url = components.url else {
+            throw NSError(domain: "APIService", code: -1, userInfo: [NSLocalizedDescriptionKey: "URL inválida"])
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        // Adicione headers de autenticação se necessário
+        // request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw NSError(domain: "APIService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Resposta inválida"]) }
+
+        switch http.statusCode {
+        case 200:
+            return try JSONDecoder().decode([ReservationDTO].self, from: data)
+        case 404:
+            // Trate 404 como lista vazia se o backend usar 404 para "sem resultados"
+            return []
+        default:
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw NSError(domain: "APIService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Erro \(http.statusCode): \(body)"])
+        }
+    }
 }
 
 // MARK: - Modelos da API
@@ -234,3 +286,4 @@ extension APIService {
         }.resume()
     }
 }
+

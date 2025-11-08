@@ -1,6 +1,40 @@
 import SwiftUI
 import Amplify
 
+// Simple shimmer effect (same as Home)
+fileprivate struct ShimmerView: View {
+    @State private var start: CGFloat = -1
+    var body: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color.gray.opacity(0.2),
+                Color.gray.opacity(0.35),
+                Color.gray.opacity(0.2)
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+        .mask(
+            Rectangle()
+                .fill(
+                    LinearGradient(colors: [.black.opacity(0.0), .black, .black.opacity(0.0)], startPoint: .leading, endPoint: .trailing)
+                )
+                .offset(x: UIScreen.main.bounds.width * start)
+        )
+        .onAppear {
+            withAnimation(.linear(duration: 1.2).repeatForever(autoreverses: false)) {
+                start = 1.5
+            }
+        }
+    }
+}
+
+fileprivate extension View {
+    func shimmered() -> some View {
+        self.overlay(ShimmerView().blendMode(.plusLighter))
+    }
+}
+
 // MARK: - Model da Reserva
 struct ReservaResumo: Identifiable, Decodable {
     var id: String { "\(spaceId_reservation)_\(date_reservation)" }
@@ -98,7 +132,43 @@ struct MyReservationsView: View {
                 if userId == nil {
                     ProgressView("Carregando usuário...")
                 } else if viewModel.isLoading {
-                    ProgressView("Carregando reservas...")
+                    // Skeleton placeholders while loading (with shimmer)
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(0..<6, id: \.self) { _ in
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.gray.opacity(0.15))
+                                    .frame(height: 120)
+                                    .overlay(
+                                        HStack(spacing: 12) {
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(Color.gray.opacity(0.2))
+                                                .frame(width: 80, height: 60)
+
+                                            VStack(alignment: .leading, spacing: 8) {
+                                                RoundedRectangle(cornerRadius: 6)
+                                                    .fill(Color.gray.opacity(0.2))
+                                                    .frame(width: 160, height: 14)
+                                                RoundedRectangle(cornerRadius: 6)
+                                                    .fill(Color.gray.opacity(0.2))
+                                                    .frame(width: 120, height: 12)
+                                                RoundedRectangle(cornerRadius: 6)
+                                                    .fill(Color.gray.opacity(0.2))
+                                                    .frame(width: 200, height: 12)
+                                            }
+                                            Spacer()
+                                        }
+                                        .padding()
+                                    )
+                                    .redacted(reason: .placeholder)
+                                    .shimmered()
+                            }
+                            Spacer().frame(height: 32)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 12)
+                        .padding(.bottom)
+                    }
                 } else if let error = viewModel.errorMessage {
                     Text(error).foregroundColor(.red)
                 } else if viewModel.reservas.isEmpty {
@@ -115,7 +185,14 @@ struct MyReservationsView: View {
                                         AsyncImage(url: URL(string: coworking.imagemUrl ?? "")) { image in
                                             image.resizable()
                                         } placeholder: {
-                                            Color.gray.opacity(0.2)
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(Color.gray.opacity(0.15))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(Color.gray.opacity(0.2))
+                                                )
+                                                .redacted(reason: .placeholder)
+                                                .shimmered()
                                         }
                                         .frame(width: 80, height: 60)
                                         .cornerRadius(8)
@@ -136,6 +213,11 @@ struct MyReservationsView: View {
                         }
                     }
                     .listStyle(.insetGrouped)
+                    .refreshable {
+                        if let userId = userId {
+                            await viewModel.carregarReservas(userId: userId)
+                        }
+                    }
                 }
             }
             .task {
