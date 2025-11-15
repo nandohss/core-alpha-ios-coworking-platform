@@ -299,7 +299,47 @@ struct CoHosterSpaceManagementView: View {
         _vm = StateObject(wrappedValue: CoHosterSpaceManagementViewModel(spaceId: spaceId))
     }
 
+    private var isSuccessAlertPresented: Binding<Bool> {
+        Binding(
+            get: { vm.successMessage != nil },
+            set: { if !$0 { vm.successMessage = nil } }
+        )
+    }
+
+    private var isErrorAlertPresented: Binding<Bool> {
+        Binding(
+            get: { vm.errorMessage != nil },
+            set: { if !$0 { vm.errorMessage = nil } }
+        )
+    }
+
+    private var isDeleteConfirmationPresented: Binding<Bool> {
+        Binding(
+            get: { vm.photoToDelete != nil },
+            set: { if !$0 { vm.photoToDelete = nil } }
+        )
+    }
+
     var body: some View {
+        content
+            .navigationTitle("Gerenciar espaço")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Salvar") { vm.saveBasics() }
+                }
+            }
+            .onAppear { vm.load() }
+            .modifier(AlertsModifier(
+                isSuccess: isSuccessAlertPresented,
+                isError: isErrorAlertPresented,
+                isDelete: isDeleteConfirmationPresented,
+                successMessage: vm.successMessage ?? "",
+                errorMessage: vm.errorMessage ?? "",
+                onDelete: vm.deleteConfirmedPhoto
+            ))
+    }
+
+    private var content: some View {
         Form {
             statusSection
             basicsSection
@@ -307,19 +347,6 @@ struct CoHosterSpaceManagementView: View {
             facilitiesSection
             availabilitySection
             rulesSection
-        }
-        .navigationTitle("Gerenciar espaço")
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Salvar") { vm.saveBasics() } } }
-        .onAppear { vm.load() }
-        .alert("Sucesso", isPresented: Binding(get: { vm.successMessage != nil }, set: { if !$0 { vm.successMessage = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(vm.successMessage ?? "") }
-        .alert("Atenção", isPresented: Binding(get: { vm.errorMessage != nil }, set: { if !$0 { vm.errorMessage = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: { Text(vm.errorMessage ?? "") }
-        .confirmationDialog("Remover foto?", isPresented: Binding(get: { vm.photoToDelete != nil }, set: { if !$0 { vm.photoToDelete = nil } })) {
-            Button("Remover", role: .destructive) { vm.deleteConfirmedPhoto() }
-            Button("Cancelar", role: .cancel) {}
         }
     }
 
@@ -349,69 +376,11 @@ struct CoHosterSpaceManagementView: View {
     }
 
     private var photosSection: some View {
-        Section(header: Text("Fotos"), footer: Text("As fotos são enviadas automaticamente ao selecionar.")) {
-            if vm.isUploading { ProgressView("Enviando fotos...") }
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(vm.photoURLs, id: \.self) { url in
-                        ZStack(alignment: .topTrailing) {
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .empty: ProgressView()
-                                case .success(let image): image.resizable().scaledToFill()
-                                case .failure: Image(systemName: "photo").font(.title)
-                                @unknown default: EmptyView()
-                                }
-                            }
-                            .frame(width: 120, height: 90)
-                            .clipped()
-                            .cornerRadius(8)
-
-                            Button(role: .destructive) { vm.confirmDeletePhoto(url) } label: {
-                                Image(systemName: "xmark.circle.fill").symbolRenderingMode(.palette)
-                                    .foregroundStyle(.white, .red)
-                            }
-                            .offset(x: 6, y: -6)
-                        }
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-            PhotosPicker(selection: $vm.pickedItems, maxSelectionCount: 6, matching: .images) {
-                Label("Adicionar fotos", systemImage: "plus")
-            }
-            .onChange(of: vm.pickedItems) { _ in vm.uploadPickedPhotos() }
-        }
+        PhotosSectionView(vm: vm)
     }
 
     private var facilitiesSection: some View {
-        Section(header: Text("Facilidades"), footer: EmptyView()) {
-            if vm.selectedFacilities.isEmpty {
-                Text("Nenhuma facilidade selecionada").foregroundStyle(.secondary)
-            } else {
-                let columns = [GridItem(.adaptive(minimum: 120), spacing: 8)]
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-                    ForEach(Array(vm.selectedFacilities), id: \.self) { facility in
-                        HStack(spacing: 6) {
-                            if let s = facility.systemImage { Image(systemName: s) }
-                            Text(facility.name)
-                            Button(role: .destructive) { vm.selectedFacilities.remove(facility) } label: {
-                                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.horizontal, 10).padding(.vertical, 6)
-                        .background(Capsule().fill(Color(.secondarySystemBackground)))
-                    }
-                }
-            }
-            Button { vm.showFacilitiesSheet = true } label: { Label("Selecionar facilidades", systemImage: "slider.horizontal.3") }
-        }
-        .sheet(isPresented: $vm.showFacilitiesSheet) {
-            FacilitiesPickerView(categories: vm.categories, preselected: vm.selectedFacilities) { selection in
-                vm.selectedFacilities = selection
-                vm.saveFacilitiesSelection()
-            }
-        }
+        FacilitiesSectionView(vm: vm)
     }
 
     private var availabilitySection: some View {
@@ -419,11 +388,11 @@ struct CoHosterSpaceManagementView: View {
             WeekdaySelector(selected: $vm.selectedWeekdays)
             VStack(alignment: .leading) {
                 Text("Datas disponíveis")
-                MultiDatePicker(selection: $vm.availableDates) { EmptyView() }
+                MultiDatePicker("Datas disponíveis", selection: $vm.availableDates)
             }
             VStack(alignment: .leading) {
                 Text("Datas bloqueadas")
-                MultiDatePicker(selection: $vm.blockedDates) { EmptyView() }
+                MultiDatePicker("Datas bloqueadas", selection: $vm.blockedDates)
             }
             Button("Salvar disponibilidade") { vm.saveAvailability() }
         }
@@ -442,14 +411,38 @@ struct CoHosterSpaceManagementView: View {
     }
 }
 
+private struct AlertsModifier: ViewModifier {
+    let isSuccess: Binding<Bool>
+    let isError: Binding<Bool>
+    let isDelete: Binding<Bool>
+    let successMessage: String
+    let errorMessage: String
+    let onDelete: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .alert("Sucesso", isPresented: isSuccess) {
+                Button("OK", role: .cancel) {}
+            } message: { Text(successMessage) }
+            .alert("Atenção", isPresented: isError) {
+                Button("OK", role: .cancel) {}
+            } message: { Text(errorMessage) }
+            .confirmationDialog("Remover foto?", isPresented: isDelete) {
+                Button("Remover", role: .destructive) { onDelete() }
+                Button("Cancelar", role: .cancel) {}
+            }
+    }
+}
+
 // MARK: - Subviews auxiliares
 private struct WeekdaySelector: View {
     @Binding var selected: Set<Int>
     private let symbols = Calendar.current.shortWeekdaySymbols // Depende da locale
 
     var body: some View {
-        HStack {
-            ForEach(1...7, id: \.self) { index in
+        let indices: [Int] = Array(1...7)
+        return HStack {
+            ForEach(indices, id: \.self) { index in
                 let isOn = selected.contains(index)
                 Button {
                     if isOn { selected.remove(index) } else { selected.insert(index) }
@@ -458,8 +451,14 @@ private struct WeekdaySelector: View {
                         .font(.caption)
                         .frame(maxWidth: .infinity)
                         .padding(8)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(isOn ? Color.accentColor.opacity(0.2) : Color(.secondarySystemBackground)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(isOn ? Color.accentColor : .clear, lineWidth: 1))
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(isOn ? Color.accentColor.opacity(0.2) : Color(.secondarySystemBackground))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(isOn ? Color.accentColor : .clear, lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
             }
@@ -467,78 +466,85 @@ private struct WeekdaySelector: View {
     }
 }
 
-private struct FacilitiesPickerView: View {
-    let categories: [FacilityCategory]
-    let preselected: Set<Facility>
-    var onDone: (Set<Facility>) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var search = ""
-
-    private var facilityLookup: [String: Facility] {
-        Dictionary(uniqueKeysWithValues: categories.flatMap { $0.facilities }.map { ($0.id, $0) })
-    }
-
-    @State private var selectedIDs: Set<String> = []
+private struct PhotosSectionView: View {
+    @ObservedObject var vm: CoHosterSpaceManagementViewModel
 
     var body: some View {
-        NavigationStack {
-            List {
-                if !search.isEmpty {
-                    let all = categories.flatMap { $0.facilities }
-                    let filtered = all.filter { $0.name.localizedCaseInsensitiveContains(search) }
-                    Section {
-                        ForEach(filtered) { item in
-                            HStack {
-                                if let s = item.systemImage { Image(systemName: s) }
-                                Text(item.name)
-                                Spacer()
-                                if selectedIDs.contains(item.id) { Image(systemName: "checkmark").foregroundStyle(.accent) }
+        Section(header: Text("Fotos"), footer: Text("As fotos são enviadas automaticamente ao selecionar.")) {
+            if vm.isUploading { ProgressView("Enviando fotos...") }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(vm.photoURLs, id: \.self) { url in
+                        ZStack(alignment: .topTrailing) {
+                            ThumbnailView(url: url)
+                                .frame(width: 120, height: 90)
+                                .clipped()
+                                .cornerRadius(8)
+
+                            Button(role: .destructive) { vm.confirmDeletePhoto(url) } label: {
+                                Image(systemName: "xmark.circle.fill").symbolRenderingMode(.palette)
+                                    .foregroundStyle(.white, .red)
                             }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                if selectedIDs.contains(item.id) { selectedIDs.remove(item.id) } else { selectedIDs.insert(item.id) }
-                            }
-                        }
-                    } header: {
-                        Text("Resultados")
-                    }
-                } else {
-                    ForEach(categories) { cat in
-                        Section {
-                            ForEach(cat.facilities) { item in
-                                HStack {
-                                    if let s = item.systemImage { Image(systemName: s) }
-                                    Text(item.name)
-                                    Spacer()
-                                    if selectedIDs.contains(item.id) { Image(systemName: "checkmark").foregroundStyle(.accent) }
-                                }
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    if selectedIDs.contains(item.id) { selectedIDs.remove(item.id) } else { selectedIDs.insert(item.id) }
-                                }
-                            }
-                        } header: {
-                            Text(cat.name)
+                            .offset(x: 6, y: -6)
                         }
                     }
                 }
+                .padding(.vertical, 4)
             }
-            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Buscar facilidades")
-            .navigationTitle("Facilidades")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Concluir") {
-                        let result = Set(selectedIDs.compactMap { facilityLookup[$0] })
-                        onDone(result)
-                        dismiss()
+            PhotosPicker(selection: $vm.pickedItems, maxSelectionCount: 6, matching: .images) {
+                Label("Adicionar fotos", systemImage: "plus")
+            }
+            .onChange(of: vm.pickedItems) { _ in vm.uploadPickedPhotos() }
+        }
+    }
+}
+
+private struct ThumbnailView: View {
+    let url: URL
+
+    var body: some View {
+        AsyncImage(url: url) { phase in
+            switch phase {
+            case .empty:
+                ProgressView()
+            case .success(let image):
+                image.resizable().scaledToFill()
+            case .failure:
+                Image(systemName: "photo").font(.title)
+            @unknown default:
+                EmptyView()
+            }
+        }
+    }
+}
+
+private struct FacilitiesSectionView: View {
+    @ObservedObject var vm: CoHosterSpaceManagementViewModel
+
+    var body: some View {
+        Section(header: Text("Facilidades"), footer: EmptyView()) {
+            if vm.selectedFacilities.isEmpty {
+                Text("Nenhuma facilidade selecionada").foregroundStyle(.secondary)
+            } else {
+                let columns = [GridItem(.adaptive(minimum: 120), spacing: 8)]
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+                    ForEach(Array(vm.selectedFacilities).sorted { $0.id < $1.id }, id: \.self) { facility in
+                        HStack(spacing: 6) {
+                            if let s = facility.systemImage { Image(systemName: s) }
+                            Text(facility.name)
+                            Button(role: .destructive) { vm.selectedFacilities.remove(facility) } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Capsule().fill(Color(.secondarySystemBackground)))
                     }
                 }
             }
-            .onAppear {
-                selectedIDs = Set(preselected.map { $0.id })
+            Button(action: {}) {
+                Label("Selecionar facilidades (desativado)", systemImage: "slider.horizontal.3")
             }
+            .disabled(true)
         }
     }
 }
@@ -547,4 +553,3 @@ private struct FacilitiesPickerView: View {
 #Preview {
     NavigationStack { CoHosterSpaceManagementView(spaceId: "space-123") }
 }
-
