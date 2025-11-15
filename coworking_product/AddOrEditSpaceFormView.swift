@@ -96,7 +96,7 @@ struct AddOrEditSpaceFormView: View {
                                         if let imagem = imagemSelecionada {
                                             uploadImagemParaS3(imagem, comId: novoId) { url in
                                                 DispatchQueue.main.async {
-                                                    formData.midia.imagemUrl = url
+                                                    formData.imagemUrl = url
                                                     APIService.enviarFormularioEspaco(formData, userId: userId, spaceId: novoId) { sucesso, erro in
                                                         DispatchQueue.main.async {
                                                             isPresented = false
@@ -161,46 +161,46 @@ struct AddOrEditSpaceFormView: View {
 
     private var etapaDadosPessoais: some View {
         SectionView(title: "Seus dados") {
-            CustomField(title: "Nome completo", text: $formData.hoster.nome)
+            CustomField(title: "Nome completo", text: $formData.nome)
                 .focused($focusedField, equals: .nome)
                 .id(SpaceFormField.nome)
 
-            CustomField(title: "CPF", text: $formData.hoster.cpf, keyboard: .numberPad, error: formData.validacao.erroCPF ? "CPF inválido" : nil)
-                .onChange(of: formData.hoster.cpf) { v in
-                    formData.hoster.cpf = formatarCPF(v.filter { $0.isNumber })
+            CustomField(title: "CPF", text: $formData.cpf, keyboard: .numberPad, error: formData.erroCPF ? "CPF inválido" : nil)
+                .onChange(of: formData.cpf) { v in
+                    formData.cpf = formatarCPF(v.filter { $0.isNumber })
                 }
                 .focused($focusedField, equals: .cpf)
                 .id(SpaceFormField.cpf)
 
-            CustomField(title: "CNPJ (opcional)", text: $formData.hoster.cnpj, keyboard: .numberPad, error: formData.validacao.erroCNPJ ? "CNPJ inválido" : nil)
-                .onChange(of: formData.hoster.cnpj) { newValue in
-                    formData.hoster.cnpj = String(newValue.filter(\.isNumber).prefix(14))
+            CustomField(title: "CNPJ (opcional)", text: $formData.cnpj, keyboard: .numberPad, error: formData.erroCNPJ ? "CNPJ inválido" : nil)
+                .onChange(of: formData.cnpj) { newValue in
+                    formData.cnpj = String(newValue.filter(\.isNumber).prefix(14))
                 }
                 .focused($focusedField, equals: .cnpj)
                 .id(SpaceFormField.cnpj)
 
-            CustomField(title: "E‑mail", text: $formData.contato.email, keyboard: .emailAddress, error: formData.validacao.erroEmail ? "E-mail inválido" : nil)
-                .onChange(of: formData.contato.email) { newValue in
-                    formData.contato.email = newValue
+            CustomField(title: "E‑mail", text: $formData.email, keyboard: .emailAddress, error: formData.erroEmail ? "E-mail inválido" : nil)
+                .onChange(of: formData.email) { newValue in
+                    formData.email = newValue
                 }
                 .focused($focusedField, equals: .email)
                 .id(SpaceFormField.email)
 
-            CustomField(title: "Razão Social (opcional)", text: $formData.hoster.razaoSocial)
+            CustomField(title: "Razão Social (opcional)", text: $formData.razaoSocial)
                 .focused($focusedField, equals: .razaoSocial)
                 .id(SpaceFormField.razaoSocial)
 
             HStack(spacing: 10) {
-                CustomField(title: "DDD", text: $formData.contato.ddd, keyboard: .numberPad, width: 80)
-                    .onChange(of: formData.contato.ddd) { v in
-                        formData.contato.ddd = String(v.filter { $0.isNumber }.prefix(2))
+                CustomField(title: "DDD", text: $formData.ddd, keyboard: .numberPad, width: 80)
+                    .onChange(of: formData.ddd) { v in
+                        formData.ddd = String(v.filter { $0.isNumber }.prefix(2))
                     }
                     .focused($focusedField, equals: .ddd)
                     .id(SpaceFormField.ddd)
 
-                CustomField(title: "Telefone", text: $formData.contato.telefone, keyboard: .numberPad)
-                    .onChange(of: formData.contato.telefone) { v in
-                        formData.contato.telefone = formatarTelefone(v.filter { $0.isNumber })
+                CustomField(title: "Telefone", text: $formData.numeroTelefone, keyboard: .numberPad)
+                    .onChange(of: formData.numeroTelefone) { v in
+                        formData.numeroTelefone = formatarTelefone(v.filter { $0.isNumber })
                     }
                     .focused($focusedField, equals: .telefone)
                     .id(SpaceFormField.telefone)
@@ -210,34 +210,34 @@ struct AddOrEditSpaceFormView: View {
 
     private var etapaEndereco: some View {
         SectionView(title: "Endereço") {
-            CustomField(title: "Rua", text: $formData.localizacao.rua)
+            CustomField(title: "Rua", text: $formData.enderecoRua)
                 .focused($focusedField, equals: .rua)
                 .id(SpaceFormField.rua)
 
             HStack {
-                CustomField(title: "Número", text: $formData.localizacao.numero, keyboard: .numberPad, width: 120)
+                CustomField(title: "Número", text: $formData.numero, keyboard: .numberPad, width: 120)
                     .focused($focusedField, equals: .numero)
                     .id(SpaceFormField.numero)
-                CustomField(title: "Complemento", text: $formData.localizacao.complemento)
+                CustomField(title: "Complemento", text: $formData.complemento)
                     .focused($focusedField, equals: .complemento)
                     .id(SpaceFormField.complemento)
             }
 
-            CustomField(title: "Bairro", text: $formData.localizacao.bairro)
+            CustomField(title: "Bairro", text: $formData.bairro)
                 .focused($focusedField, equals: .bairro)
                 .id(SpaceFormField.bairro)
 
             HStack {
-                CustomField(title: "Cidade", text: $formData.localizacao.cidade)
+                CustomField(title: "Cidade", text: $formData.cidade)
                     .focused($focusedField, equals: .cidade)
                     .id(SpaceFormField.cidade)
 
                 Menu {
                     ForEach(FormsConstants.ufs, id: \.self) { uf in
-                        Button(uf) { formData.localizacao.estado = uf }
+                        Button(uf) { formData.estado = uf }
                     }
                 } label: {
-                    FieldLabel(label: "Estado", value: formData.localizacao.estado)
+                    FieldLabel(label: "Estado", value: formData.estado)
                 }
                 .frame(width: 100)
             }
@@ -246,11 +246,11 @@ struct AddOrEditSpaceFormView: View {
 
     private var etapaDetalhesEspaco: some View {
         SectionView(title: "Detalhes do espaço") {
-            CustomField(title: "Nome do espaço", text: $formData.detalhes.nome)
+            CustomField(title: "Nome do espaço", text: $formData.nomeEspaco)
                 .focused($focusedField, equals: .nomeEspaco)
                 .id(SpaceFormField.nomeEspaco)
 
-            CustomField(title: "Capacidade (pessoas)", text: $formData.detalhes.capacidade, keyboard: .numberPad)
+            CustomField(title: "Capacidade (pessoas)", text: $formData.capacidadePessoas, keyboard: .numberPad)
                 .focused($focusedField, equals: .capacidade)
                 .id(SpaceFormField.capacidade)
 
@@ -259,15 +259,15 @@ struct AddOrEditSpaceFormView: View {
                     Button(cat) { formData.setCategoria(cat) }
                 }
             } label: {
-                FieldLabel(label: "Categoria", value: formData.detalhes.categoria)
+                FieldLabel(label: "Categoria", value: formData.categoria)
             }
 
             Menu {
-                ForEach(FormsConstants.categorias[formData.detalhes.categoria] ?? [], id: \.self) { sub in
-                    Button(sub) { formData.detalhes.subcategoria = sub }
+                ForEach(FormsConstants.categorias[formData.categoria] ?? [], id: \.self) { sub in
+                    Button(sub) { formData.subcategoria = sub }
                 }
             } label: {
-                FieldLabel(label: "Subcategoria", value: formData.detalhes.subcategoria)
+                FieldLabel(label: "Subcategoria", value: formData.subcategoria)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -295,11 +295,11 @@ struct AddOrEditSpaceFormView: View {
 
     private var etapaDescricaoRegras: some View {
         SectionView(title: "Descrição e Regras") {
-            TextoContado(title: "Descrição (mín. 50 caracteres)", text: $formData.detalhes.descricao, limit: 50...500)
+            TextoContado(title: "Descrição (mín. 50 caracteres)", text: $formData.descricaoEspaco, limit: 50...500)
                 .focused($focusedField, equals: .descricao)
                 .id(SpaceFormField.descricao)
                 .frame(minHeight: 160)
-            TextoContado(title: "Regras (mín. 20 caracteres)", text: $formData.detalhes.regras, limit: 20...300)
+            TextoContado(title: "Regras (mín. 20 caracteres)", text: $formData.regras, limit: 20...300)
                 .focused($focusedField, equals: .regras)
                 .id(SpaceFormField.regras)
                 .frame(minHeight: 140)
@@ -307,20 +307,20 @@ struct AddOrEditSpaceFormView: View {
     }
 
     private var etapaFacilidades: some View {
-        TagGrid(tags: FormsConstants.todasFacilidades, selected: $formData.facilidades.facilidades)
+        TagGrid(tags: FormsConstants.todasFacilidades, selected: $formData.facilidadesSelecionadas)
             .padding(.top, 10)
     }
 
     private var etapaDisponibilidadePreco: some View {
         SectionView(title: "Disponibilidade e preço") {
-            DisponibilidadeInline(dias: $formData.disponibilidade.dias,
-                                  inicio: $formData.disponibilidade.horarioInicio,
-                                  fim: $formData.disponibilidade.horarioFim)
+            DisponibilidadeInline(dias: $formData.diasDisponiveis,
+                                  inicio: $formData.horarioInicio,
+                                  fim: $formData.horarioFim)
             HStack {
-                CurrencyField(title: "Preço por hora", value: $formData.precos.precoPorHora)
+                CurrencyField(title: "Preço por hora", value: $formData.precoPorHora)
                     .focused($focusedField, equals: .precoHora)
                     .id(SpaceFormField.precoHora)
-                CurrencyField(title: "Preço por dia", value: $formData.precos.precoPorDia)
+                CurrencyField(title: "Preço por dia", value: $formData.precoPorDia)
                     .focused($focusedField, equals: .precoDia)
                     .id(SpaceFormField.precoDia)
             }
@@ -331,31 +331,31 @@ struct AddOrEditSpaceFormView: View {
 
     private func validarCamposEtapaAtual() {
         if etapaAtual == 0 {
-            formData.validacao.erroCPF = !isCPFValido(formData.hoster.cpf)
-            formData.validacao.erroCNPJ = !formData.hoster.cnpj.isEmpty && !isCNPJValido(formData.hoster.cnpj)
-            formData.validacao.erroEmail = !isEmailValido(formData.contato.email)
+            formData.erroCPF = !isCPFValido(formData.cpf)
+            formData.erroCNPJ = !formData.cnpj.isEmpty && !isCNPJValido(formData.cnpj)
+            formData.erroEmail = !isEmailValido(formData.email)
         }
     }
     private func etapaValida() -> Bool {
         switch etapaAtual {
         case 0:
-            return !formData.hoster.nome.isEmpty &&
-                   !formData.contato.email.isEmpty && !formData.validacao.erroEmail &&
-                   !formData.hoster.cpf.isEmpty && !formData.validacao.erroCPF &&
-                   formData.contato.ddd.count == 2 &&
-                   formData.contato.telefone.filter { $0.isNumber }.count >= 8
+            return !formData.nome.isEmpty &&
+                   !formData.email.isEmpty && !formData.erroEmail &&
+                   !formData.cpf.isEmpty && !formData.erroCPF &&
+                   formData.ddd.count == 2 &&
+                   formData.numeroTelefone.filter { $0.isNumber }.count >= 8
         case 1:
-            return !formData.localizacao.rua.isEmpty && !formData.localizacao.cidade.isEmpty
+            return !formData.enderecoRua.isEmpty && !formData.cidade.isEmpty
         case 2:
-            return !formData.detalhes.capacidade.isEmpty
+            return !formData.capacidadePessoas.isEmpty
         case 3:
-            return formData.detalhes.descricao.count >= 50 && formData.detalhes.regras.count >= 20
+            return formData.descricaoEspaco.count >= 50 && formData.regras.count >= 20
         case 4:
             return true
         case 5:
-            return !formData.disponibilidade.dias.isEmpty &&
-                   !formData.precos.precoPorHora.isEmpty &&
-                   !formData.precos.precoPorDia.isEmpty
+            return !formData.diasDisponiveis.isEmpty &&
+                   !formData.precoPorHora.isEmpty &&
+                   !formData.precoPorDia.isEmpty
         default:
             return false
         }
