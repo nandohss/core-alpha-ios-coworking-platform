@@ -35,11 +35,7 @@ struct LoginView: View {
                     .multilineTextAlignment(.center)
                     .padding(.bottom, 40)
 
-                HStack(spacing: 30) {
-                    SocialButton(imageName: "facebook", altText: "Facebook") {
-                        print("Facebook login não implementado")
-                    }
-
+                VStack(spacing: 20) {
                     SocialButton(imageName: "google", altText: "Google") {
                         Task {
                             guard isAmplifyReady else { return }
@@ -53,8 +49,17 @@ struct LoginView: View {
                         }
                     }
 
-                    SocialButton(imageName: "metamask_logo", altText: "MetaMask") {
-                        print("MetaMask login não implementado")
+                    AppleSignInButton {
+                        Task {
+                            guard isAmplifyReady else { return }
+
+                            let session = try await Amplify.Auth.fetchAuthSession()
+                            if session.isSignedIn {
+                                _ = await Amplify.Auth.signOut()
+                            }
+
+                            await loginComApple()
+                        }
                     }
                 }
 
@@ -115,6 +120,24 @@ struct LoginView: View {
                 buscarDadosDoUsuario()
             } catch {
                 print("❌ Erro no login com Google: \(error)")
+            }
+        }
+    }
+
+    func loginComApple() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            print("❌ Janela principal não encontrada")
+            return
+        }
+
+        Task {
+            do {
+                let result = try await Amplify.Auth.signInWithWebUI(for: .apple, presentationAnchor: window)
+                print("✅ Login com Apple concluído: \(result)")
+                buscarDadosDoUsuario()
+            } catch {
+                print("❌ Erro no login com Apple: \(error)")
             }
         }
     }
@@ -203,5 +226,27 @@ struct SocialButton: View {
                 .shadow(color: .gray.opacity(0.2), radius: 2, x: 0, y: 2)
         }
         .accessibilityLabel(Text(altText))
+    }
+}
+
+struct AppleSignInButton: View {
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Image(systemName: "apple.logo")
+                    .font(.system(size: 20, weight: .bold))
+                Text("Sign in with Apple")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.black)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+        }
+        .accessibilityLabel(Text("Sign in with Apple"))
     }
 }

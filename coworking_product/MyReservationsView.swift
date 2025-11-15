@@ -45,6 +45,7 @@ struct ReservaResumo: Identifiable, Decodable {
     let date_reservation: String
     let hour_reservation: String
     let created_at: String
+    let space: SpaceSummary?
 
     var formattedDate: String {
         let formatter = DateFormatter()
@@ -62,18 +63,19 @@ struct ReservaResumo: Identifiable, Decodable {
     }
 }
 
-// MARK: - Modelo do Espaço
-struct CoworkingInfo: Decodable {
+// MARK: - Modelo expandido do Espaço retornado pela reserva
+struct SpaceSummary: Decodable {
     let spaceId: String
     let name: String
     let imagemUrl: String?
+    let city: String?
+    let categoria: String?
 }
 
 // MARK: - ViewModel
 @MainActor
 class MinhasReservasViewModel: ObservableObject {
     @Published var reservas: [ReservaResumo] = []
-    @Published var coworkings: [String: CoworkingInfo] = [:]
     @Published var isLoading = false
     @Published var errorMessage: String? = nil
 
@@ -98,25 +100,8 @@ class MinhasReservasViewModel: ObservableObject {
             }
             let decoded = try JSONDecoder().decode([ReservaResumo].self, from: data)
             self.reservas = decoded
-            await carregarCoworkings()
         } catch {
             self.errorMessage = "Erro ao carregar reservas: \(error.localizedDescription)"
-        }
-    }
-
-    func carregarCoworkings() async {
-        guard let url = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro/spaces") else { return }
-
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let decoded = try JSONDecoder().decode([CoworkingInfo].self, from: data)
-            var mapa: [String: CoworkingInfo] = [:]
-            for coworking in decoded {
-                mapa[coworking.spaceId] = coworking
-            }
-            self.coworkings = mapa
-        } catch {
-            print("Erro ao carregar coworkings: \(error.localizedDescription)")
         }
     }
 }
@@ -179,7 +164,7 @@ struct MyReservationsView: View {
                     List {
                         ForEach(viewModel.reservasAgrupadas.sorted(by: { $0.key < $1.key }), id: \.key) { _, reservasGrupo in
                             if let primeira = reservasGrupo.first,
-                               let coworking = viewModel.coworkings[primeira.spaceId_reservation] {
+                               let coworking = primeira.space {
                                 NavigationLink(destination: ReservationGroupDetailView(reservas: reservasGrupo, coworking: coworking)) {
                                     HStack(spacing: 12) {
                                         AsyncImage(url: URL(string: coworking.imagemUrl ?? "")) { image in
@@ -209,6 +194,17 @@ struct MyReservationsView: View {
                                     }
                                     .padding(.vertical, 4)
                                 }
+                            } else if let fallback = reservasGrupo.first {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Reserva em processamento")
+                                        .font(.headline)
+                                    Text(fallback.formattedDate)
+                                        .font(.subheadline)
+                                    Text(fallback.formattedHour)
+                                        .font(.footnote)
+                                        .foregroundColor(.gray)
+                                }
+                                .padding(.vertical, 8)
                             }
                         }
                     }
@@ -242,7 +238,7 @@ struct MyReservationsView: View {
 
 struct ReservationGroupDetailView: View {
     let reservas: [ReservaResumo]
-    let coworking: CoworkingInfo
+    let coworking: SpaceSummary
 
     var body: some View {
         ScrollView {
@@ -295,7 +291,7 @@ struct ReservationGroupDetailView: View {
         }
     }
 
-    func gerarQRString(reservas: [ReservaResumo], coworking: CoworkingInfo) -> String? {
+    func gerarQRString(reservas: [ReservaResumo], coworking: SpaceSummary) -> String? {
         let horas = reservas.map { $0.hour_reservation }.joined(separator: ", ")
         return "Espaço: \(coworking.name)\nData: \(reservas.first?.date_reservation ?? "")\nHorários: \(horas)"
     }
