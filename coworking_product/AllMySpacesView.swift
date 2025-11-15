@@ -215,7 +215,7 @@ private struct SpacesList: View {
     var body: some View {
         List {
             ForEach(data, id: \.spaceId) { space in
-                NavigationLink(destination: SpaceDetailPlaceholder(name: space.name)) {
+                NavigationLink(destination: CoHosterSpaceManagementView(spaceId: space.spaceId)) {
                     SpaceRow(space: space)
                 }
                 .swipeActions(edge: .trailing) {
