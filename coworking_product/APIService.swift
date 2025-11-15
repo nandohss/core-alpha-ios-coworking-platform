@@ -31,26 +31,36 @@ class APIService {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
 
+        let detalhes = form.detalhes
+        let localizacao = form.localizacao
+        let disponibilidade = form.disponibilidade
+        let precos = form.precos
+        let amenities = Array(form.facilidades.facilidades)
+
         let body: [String: Any] = [
             "spaceId": spaceId,
-            "name": form.nomeEspaco,
-            "city": form.cidade,
+            "name": detalhes.nome,
+            "city": localizacao.cidade,
             "country": "Brasil",
-            "district": form.bairro,
-            "capacity": Int(form.capacidadePessoas) ?? 0,
-            "amenities": Array(form.facilidadesSelecionadas),
+            "district": localizacao.bairro,
+            "capacity": Int(detalhes.capacidade) ?? 0,
+            "amenities": amenities,
             "availability": true,
-            "categoria": form.categoria,
-            "subcategoria": form.subcategoria,
-            "descricao": form.descricaoEspaco,
-            "regras": form.regras,
-            "diasSemana": Array(form.diasDisponiveis),
-            "horaInicio": formatter.string(from: form.horarioInicio),
-            "horaFim": formatter.string(from: form.horarioFim),
-            "precoHora": form.precoPorHora.replacingOccurrences(of: "[^0-9,]", with: "", options: String.CompareOptions.regularExpression).replacingOccurrences(of: ",", with: "."),
-            "precoDia": form.precoPorDia.replacingOccurrences(of: "[^0-9,]", with: "", options: String.CompareOptions.regularExpression).replacingOccurrences(of: ",", with: "."),
+            "categoria": detalhes.categoria,
+            "subcategoria": detalhes.subcategoria,
+            "descricao": detalhes.descricao,
+            "regras": detalhes.regras,
+            "diasSemana": Array(disponibilidade.dias),
+            "horaInicio": formatter.string(from: disponibilidade.horarioInicio),
+            "horaFim": formatter.string(from: disponibilidade.horarioFim),
+            "precoHora": form.limparMascaraMonetaria(precos.precoPorHora),
+            "precoDia": form.limparMascaraMonetaria(precos.precoPorDia),
             "hoster": userId,
-            "imagemUrl": form.imagemUrl?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
+            "imagemUrl": form.midia.imagemUrl?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            "estado": localizacao.estado,
+            "rua": localizacao.rua,
+            "numero": localizacao.numero,
+            "complemento": localizacao.complemento
         ]
 
         if let jsonData = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted),
