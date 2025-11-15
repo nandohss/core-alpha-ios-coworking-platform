@@ -31,36 +31,26 @@ class APIService {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
 
-        let detalhes = form.detalhes
-        let localizacao = form.localizacao
-        let disponibilidade = form.disponibilidade
-        let precos = form.precos
-        let amenities = Array(form.facilidades.facilidades)
-
         let body: [String: Any] = [
             "spaceId": spaceId,
-            "name": detalhes.nome,
-            "city": localizacao.cidade,
+            "name": form.nomeEspaco,
+            "city": form.cidade,
             "country": "Brasil",
-            "district": localizacao.bairro,
-            "capacity": Int(detalhes.capacidade) ?? 0,
-            "amenities": amenities,
+            "district": form.bairro,
+            "capacity": Int(form.capacidadePessoas) ?? 0,
+            "amenities": Array(form.facilidadesSelecionadas),
             "availability": true,
-            "categoria": detalhes.categoria,
-            "subcategoria": detalhes.subcategoria,
-            "descricao": detalhes.descricao,
-            "regras": detalhes.regras,
-            "diasSemana": Array(disponibilidade.dias),
-            "horaInicio": formatter.string(from: disponibilidade.horarioInicio),
-            "horaFim": formatter.string(from: disponibilidade.horarioFim),
-            "precoHora": form.limparMascaraMonetaria(precos.precoPorHora),
-            "precoDia": form.limparMascaraMonetaria(precos.precoPorDia),
+            "categoria": form.categoria,
+            "subcategoria": form.subcategoria,
+            "descricao": form.descricaoEspaco,
+            "regras": form.regras,
+            "diasSemana": Array(form.diasDisponiveis),
+            "horaInicio": formatter.string(from: form.horarioInicio),
+            "horaFim": formatter.string(from: form.horarioFim),
+            "precoHora": form.precoPorHora.replacingOccurrences(of: "[^0-9,]", with: "", options: String.CompareOptions.regularExpression).replacingOccurrences(of: ",", with: "."),
+            "precoDia": form.precoPorDia.replacingOccurrences(of: "[^0-9,]", with: "", options: String.CompareOptions.regularExpression).replacingOccurrences(of: ",", with: "."),
             "hoster": userId,
-            "imagemUrl": form.midia.imagemUrl?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
-            "estado": localizacao.estado,
-            "rua": localizacao.rua,
-            "numero": localizacao.numero,
-            "complemento": localizacao.complemento
+            "imagemUrl": form.imagemUrl?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
         ]
 
         if let jsonData = try? JSONSerialization.data(withJSONObject: body, options: .prettyPrinted),
