@@ -74,7 +74,7 @@ final class SpaceManagementService {
     }
 
     // Salvar disponibilidade
-    func saveAvailability(spaceId: String, weekdays: Set<Int>, availableDates: Set<DateComponents>, blockedDates: Set<DateComponents>) async throws {
+    func saveAvailability(spaceId: String, weekdays: Set<Int>) async throws {
         // TODO: Persistir disponibilidade
         try await Task.sleep(nanoseconds: 350_000_000)
     }
@@ -105,6 +105,7 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
     @Published var title: String = ""
     @Published var capacity: Int = 1
     @Published var pricePerHourBRL: String = "" // campo editável formatado
+    @Published var pricePerDayBRL: String = "" // campo editável formatado
     @Published var descriptionText: String = ""
 
     // Fotos
@@ -122,8 +123,6 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
     // Disponibilidade
     // Dias da semana selecionados (1=Domingo ... 7=Sábado conforme Calendar.current)
     @Published var selectedWeekdays: Set<Int> = []
-    @Published var availableDates: Set<DateComponents> = []
-    @Published var blockedDates: Set<DateComponents> = []
 
     // Regras
     @Published var minDurationMinutes: Int = 60
@@ -238,7 +237,7 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
     func saveAvailability() {
         Task {
             do {
-                try await service.saveAvailability(spaceId: spaceId, weekdays: selectedWeekdays, availableDates: availableDates, blockedDates: blockedDates)
+                try await service.saveAvailability(spaceId: spaceId, weekdays: selectedWeekdays)
                 successMessage = "Disponibilidade salva"
             } catch {
                 errorMessage = error.localizedDescription
@@ -257,12 +256,58 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
         }
     }
 
+    // MARK: - New aggregated saving method
+    func saveAll() {
+        Task {
+            isLoading = true
+            errorMessage = nil
+            successMessage = nil
+            defer { isLoading = false }
+            do {
+                // Save basics
+                let space = ManagedSpace(
+                    title: title,
+                    capacity: capacity,
+                    pricePerHour: Self.brlToDouble(pricePerHourBRL),
+                    description: descriptionText,
+                    isEnabled: isEnabledForBookings
+                )
+                try await service.saveSpaceBasics(space)
+
+                // Upload photos if any
+                if !pickedItems.isEmpty {
+                    isUploading = true
+                    let currentItems = pickedItems
+                    pickedItems.removeAll()
+                    for item in currentItems {
+                        if let data = try await item.loadTransferable(type: Data.self) {
+                            let filename = UUID().uuidString + ".jpg"
+                            let url = try await service.uploadPhoto(data: data, filename: filename, spaceId: spaceId)
+                            withAnimation { photoURLs.append(url) }
+                        }
+                    }
+                    isUploading = false
+                }
+
+                // Save availability
+                try await service.saveAvailability(spaceId: spaceId, weekdays: selectedWeekdays)
+
+                // Save rules
+                try await service.saveRules(spaceId: spaceId, minDurationMinutes: minDurationMinutes, bufferMinutes: bufferMinutes)
+
+                successMessage = "Alterações salvas"
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
     // MARK: - Helpers BRL
     static func brlString(from value: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.locale = Locale(identifier: "pt_BR")
-        return formatter.string(from: NSNumber(value: value)) ?? "R$ 0,00"
+        return formatter.string(from: NSNumber(value: value)) ?? "R$ 0,00"
     }
 
     static func brlToDouble(_ text: String) -> Double {
@@ -274,19 +319,19 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
     static func sampleCategories() -> [FacilityCategory] {
         return [
             FacilityCategory(id: "basic", name: "Básico", facilities: [
-                Facility(id: "wifi", name: "Wi‑Fi", systemImage: "wifi"),
-                Facility(id: "ac", name: "Ar Cond.", systemImage: "wind"),
-                Facility(id: "projector", name: "Projetor", systemImage: "videoprojector"),
+                Facility(id: "wifi", name: "Wi-Fi", systemImage: "wifi"),
+                Facility(id: "ac", name: "Ar-condicionado", systemImage: "wind"),
+                Facility(id: "projector", name: "Projetor", systemImage: "videoprojector")
             ]),
             FacilityCategory(id: "comfort", name: "Conforto", facilities: [
                 Facility(id: "coffee", name: "Café", systemImage: "cup.and.saucer"),
-                Facility(id: "water", name: "Água", systemImage: "drop"),
-                Facility(id: "parking", name: "Estacionamento", systemImage: "car"),
+                Facility(id: "water", name: "Água filtrada", systemImage: "drop"),
+                Facility(id: "parking", name: "Estacionamento", systemImage: "car")
             ]),
             FacilityCategory(id: "office", name: "Escritório", facilities: [
-                Facility(id: "whiteboard", name: "Quadro", systemImage: "rectangle.and.pencil.and.ellipsis"),
-                Facility(id: "meeting", name: "Sala Reunião", systemImage: "person.3"),
-            ]),
+                Facility(id: "whiteboard", name: "Lousa", systemImage: "rectangle.and.pencil.and.ellipsis"),
+                Facility(id: "meeting", name: "Sala de reunião", systemImage: "person.3")
+            ])
         ]
     }
 }
@@ -294,6 +339,15 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
 // MARK: - View
 struct CoHosterSpaceManagementView: View {
     @StateObject private var vm: CoHosterSpaceManagementViewModel
+
+    @FocusState private var focusedField: Field?
+
+    private enum Field: Hashable {
+        case title
+        case priceHour
+        case priceDay
+        case description
+    }
 
     init(spaceId: String) {
         _vm = StateObject(wrappedValue: CoHosterSpaceManagementViewModel(spaceId: spaceId))
@@ -325,7 +379,8 @@ struct CoHosterSpaceManagementView: View {
             .navigationTitle("Gerenciar espaço")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Salvar") { vm.saveBasics() }
+                    Button("Salvar") { vm.saveAll() }
+                        .tint(.black)
                 }
             }
             .onAppear { vm.load() }
@@ -337,6 +392,13 @@ struct CoHosterSpaceManagementView: View {
                 errorMessage: vm.errorMessage ?? "",
                 onDelete: vm.deleteConfirmedPhoto
             ))
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("OK") { focusedField = nil }
+                        .tint(.black)
+                }
+            }
     }
 
     private var content: some View {
@@ -349,31 +411,96 @@ struct CoHosterSpaceManagementView: View {
             rulesSection
         }
     }
+    
+    private struct PriceInputField: View {
+        let label: String
+        @Binding var text: String
+        var focus: FocusState<Field?>.Binding? = nil
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+
+                HStack {
+                    TextField("R$ 0,00", text: $text)
+                        .keyboardType(.numberPad)
+                        .onChange(of: text) { newValue in
+                            let double = CoHosterSpaceManagementViewModel.brlToDouble(newValue)
+                            text = CoHosterSpaceManagementViewModel.brlString(from: double)
+                        }
+                        .modifier(ApplyFocusModifier(focus: focus, for: label))
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 52)
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color(.systemGray6))
+                )
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private struct ApplyFocusModifier: ViewModifier {
+        let focus: FocusState<Field?>.Binding?
+        let target: Field
+
+        init(focus: FocusState<Field?>.Binding?, for label: String) {
+            self.focus = focus
+            // Map label to field
+            if label == "Preço por hora" {
+                self.target = .priceHour
+            } else {
+                self.target = .priceDay
+            }
+        }
+
+        func body(content: Content) -> some View {
+            if let focus = focus {
+                content.focused(focus, equals: target)
+            } else {
+                content
+            }
+        }
+    }
 
     // MARK: - Sections
     private var statusSection: some View {
         Section(header: Text("Status e aprovação"), footer: EmptyView()) {
             Toggle("Habilitar reservas", isOn: $vm.isEnabledForBookings)
+                .tint(.black)
                 .onChange(of: vm.isEnabledForBookings) { _ in vm.saveFlags() }
             Toggle("Aprovação automática", isOn: $vm.autoApproveBookings)
+                .tint(.black)
                 .onChange(of: vm.autoApproveBookings) { _ in vm.saveFlags() }
         }
     }
 
     private var basicsSection: some View {
         Section(header: Text("Dados do espaço"), footer: Text("O preço é formatado em Real (pt-BR). Toque em Salvar para persistir.")) {
-            TextField("Título", text: $vm.title)
+            TextField("Título", text: $vm.title).focused($focusedField, equals: .title)
             Stepper(value: $vm.capacity, in: 1...200) { Text("Capacidade: \(vm.capacity)") }
-            TextField("Preço/hora (BRL)", text: $vm.pricePerHourBRL)
-                .keyboardType(.numberPad)
-                .onChange(of: vm.pricePerHourBRL) { new in
-                    let double = CoHosterSpaceManagementViewModel.brlToDouble(new)
-                    vm.pricePerHourBRL = CoHosterSpaceManagementViewModel.brlString(from: double)
+
+            HStack(alignment: .top, spacing: 12) {
+                PriceInputField(label: "Preço por hora", text: $vm.pricePerHourBRL, focus: $focusedField)
+                PriceInputField(label: "Preço por dia", text: $vm.pricePerDayBRL, focus: $focusedField)
+            }
+
+            ZStack(alignment: .topLeading) {
+                if vm.descriptionText.isEmpty {
+                    Text("Escreva a descrição do espaço aqui...")
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
+                        .padding(.leading, 5)
                 }
-            TextEditor(text: $vm.descriptionText)
-                .frame(minHeight: 80)
+                TextEditor(text: $vm.descriptionText).focused($focusedField, equals: .description)
+                    .frame(minHeight: 80)
+            }
         }
     }
+
 
     private var photosSection: some View {
         PhotosSectionView(vm: vm)
@@ -386,27 +513,25 @@ struct CoHosterSpaceManagementView: View {
     private var availabilitySection: some View {
         Section(header: Text("Disponibilidade"), footer: EmptyView()) {
             WeekdaySelector(selected: $vm.selectedWeekdays)
-            VStack(alignment: .leading) {
-                Text("Datas disponíveis")
-                MultiDatePicker("Datas disponíveis", selection: $vm.availableDates)
-            }
-            VStack(alignment: .leading) {
-                Text("Datas bloqueadas")
-                MultiDatePicker("Datas bloqueadas", selection: $vm.blockedDates)
-            }
-            Button("Salvar disponibilidade") { vm.saveAvailability() }
         }
     }
 
     private var rulesSection: some View {
         Section(header: Text("Regras de reserva"), footer: EmptyView()) {
-            Stepper(value: $vm.minDurationMinutes, in: 30...480, step: 15) {
-                Text("Duração mínima: \(vm.minDurationMinutes) min")
+            HStack {
+                Stepper(value: $vm.minDurationMinutes, in: 30...480, step: 15) {
+                    Text("Duração mínima: \(vm.minDurationMinutes) min").font(.subheadline)
+                }
             }
-            Stepper(value: $vm.bufferMinutes, in: 0...240, step: 5) {
-                Text("Intervalo entre reservas: \(vm.bufferMinutes) min")
+            .scaleEffect(1.06)
+            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: vm.minDurationMinutes)
+            HStack {
+                Stepper(value: $vm.bufferMinutes, in: 0...240, step: 5) {
+                    Text("Intervalo entre reservas: \(vm.bufferMinutes) min").font(.subheadline)
+                }
             }
-            Button("Salvar regras") { vm.saveRules() }
+            .scaleEffect(1.06)
+            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: vm.bufferMinutes)
         }
     }
 }
@@ -435,34 +560,70 @@ private struct AlertsModifier: ViewModifier {
 }
 
 // MARK: - Subviews auxiliares
-private struct WeekdaySelector: View {
-    @Binding var selected: Set<Int>
-    private let symbols = Calendar.current.shortWeekdaySymbols // Depende da locale
+
+// Tag reutilizável no estilo das telas de cadastro
+private struct SelectableTag: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
 
     var body: some View {
-        let indices: [Int] = Array(1...7)
-        return HStack {
-            ForEach(indices, id: \.self) { index in
-                let isOn = selected.contains(index)
-                Button {
-                    if isOn { selected.remove(index) } else { selected.insert(index) }
-                } label: {
-                    Text(symbols[index - 1])
-                        .font(.caption)
-                        .frame(maxWidth: .infinity)
-                        .padding(8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(isOn ? Color.accentColor.opacity(0.2) : Color(.secondarySystemBackground))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(isOn ? Color.accentColor : .clear, lineWidth: 1)
-                        )
+        Button(action: action) {
+            Text(title)
+                .font(.body)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(isSelected ? Color.black : Color(.systemGray5))
+                )
+                .foregroundColor(isSelected ? .white : .black)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// Dias da semana dentro de uma "box" com tags pretas/cinzas
+private struct WeekdaySelector: View {
+    @Binding var selected: Set<Int>
+
+    // 1 = Domingo, 2 = Segunda, ..., 7 = Sábado
+    private let weekdays: [(label: String, index: Int)] = [
+        ("Seg", 2),
+        ("Ter", 3),
+        ("Qua", 4),
+        ("Qui", 5),
+        ("Sex", 6),
+        ("Sáb", 7),
+        ("Dom", 1)
+    ]
+
+    private let columns: [GridItem] = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Dias da semana")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            LazyVGrid(columns: columns, alignment: .center, spacing: 12) {
+                ForEach(weekdays, id: \.index) { day in
+                    let isOn = selected.contains(day.index)
+                    SelectableTag(title: day.label, isSelected: isOn) {
+                        if isOn {
+                            selected.remove(day.index)
+                        } else {
+                            selected.insert(day.index)
+                        }
+                    }
                 }
-                .buttonStyle(.plain)
             }
         }
+        .padding(.vertical, 8)
     }
 }
 
@@ -470,7 +631,7 @@ private struct PhotosSectionView: View {
     @ObservedObject var vm: CoHosterSpaceManagementViewModel
 
     var body: some View {
-        Section(header: Text("Fotos"), footer: Text("As fotos são enviadas automaticamente ao selecionar.")) {
+        Section(header: Text("Fotos"), footer: Text("As fotos serão enviadas ao salvar.")) {
             if vm.isUploading { ProgressView("Enviando fotos...") }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -486,7 +647,14 @@ private struct PhotosSectionView: View {
                                     .foregroundStyle(.white, .red)
                             }
                             .offset(x: 6, y: -6)
+                            .tint(.red)
                         }
+                    }
+                    ForEach(Array(vm.pickedItems.enumerated()), id: \.offset) { _, item in
+                        PickedItemThumbnail(item: item)
+                            .frame(width: 120, height: 90)
+                            .clipped()
+                            .cornerRadius(8)
                     }
                 }
                 .padding(.vertical, 4)
@@ -494,7 +662,7 @@ private struct PhotosSectionView: View {
             PhotosPicker(selection: $vm.pickedItems, maxSelectionCount: 6, matching: .images) {
                 Label("Adicionar fotos", systemImage: "plus")
             }
-            .onChange(of: vm.pickedItems) { _ in vm.uploadPickedPhotos() }
+            .tint(.black)
         }
     }
 }
@@ -518,38 +686,75 @@ private struct ThumbnailView: View {
     }
 }
 
+private struct PickedItemThumbnail: View {
+    let item: PhotosPickerItem
+    @State private var image: Image? = nil
+
+    var body: some View {
+        ZStack {
+            if let image = image {
+                image.resizable().scaledToFill()
+            } else {
+                ProgressView()
+            }
+        }
+        .task(id: item) {
+            if let data = try? await item.loadTransferable(type: Data.self),
+               let ui = UIImage(data: data) {
+                image = Image(uiImage: ui)
+            }
+        }
+    }
+}
+
+// Facilidades no mesmo estilo de tags da tela de cadastro
 private struct FacilitiesSectionView: View {
     @ObservedObject var vm: CoHosterSpaceManagementViewModel
 
+    private var allFacilities: [Facility] {
+        vm.categories.flatMap { $0.facilities }
+    }
+
+    private let columns: [GridItem] = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
     var body: some View {
         Section(header: Text("Facilidades"), footer: EmptyView()) {
-            if vm.selectedFacilities.isEmpty {
-                Text("Nenhuma facilidade selecionada").foregroundStyle(.secondary)
-            } else {
-                let columns = [GridItem(.adaptive(minimum: 120), spacing: 8)]
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-                    ForEach(Array(vm.selectedFacilities).sorted { $0.id < $1.id }, id: \.self) { facility in
-                        HStack(spacing: 6) {
-                            if let s = facility.systemImage { Image(systemName: s) }
-                            Text(facility.name)
-                            Button(role: .destructive) { vm.selectedFacilities.remove(facility) } label: {
-                                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Selecione as facilidades disponíveis no espaço")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if allFacilities.isEmpty {
+                    Text("Nenhuma facilidade configurada.")
+                        .foregroundStyle(.secondary)
+                        .font(.subheadline)
+                } else {
+                    LazyVGrid(columns: columns, alignment: .center, spacing: 12) {
+                        ForEach(allFacilities, id: \.self) { facility in
+                            let isSelected = vm.selectedFacilities.contains(facility)
+                            SelectableTag(title: facility.name, isSelected: isSelected) {
+                                if isSelected {
+                                    vm.selectedFacilities.remove(facility)
+                                } else {
+                                    vm.selectedFacilities.insert(facility)
+                                }
+                                // opcional: salvar a cada toque
+                                // vm.saveFacilitiesSelection()
                             }
                         }
-                        .padding(.horizontal, 10).padding(.vertical, 6)
-                        .background(Capsule().fill(Color(.secondarySystemBackground)))
                     }
                 }
             }
-            Button(action: {}) {
-                Label("Selecionar facilidades (desativado)", systemImage: "slider.horizontal.3")
-            }
-            .disabled(true)
+            .padding(.vertical, 8)
         }
     }
 }
 
 // MARK: - Preview
-#Preview {
-    NavigationStack { CoHosterSpaceManagementView(spaceId: "space-123") }
-}
+// #Preview {
+//     NavigationStack { CoHosterSpaceManagementView(spaceId: "space-123") }
+// }
+

@@ -85,7 +85,8 @@ struct ReservationSummaryView: View {
                                 label: method.label,
                                 iconName: method.icon,
                                 isSelected: selectedPaymentMethod == method.label,
-                                onTap: { selectedPaymentMethod = method.label }
+                                onTap: { selectedPaymentMethod = method.label },
+                                isDisabled: false
                             )
                         }
                     }
@@ -94,12 +95,17 @@ struct ReservationSummaryView: View {
                         Text("Pagar com Criptomoeda")
                             .font(.headline)
 
+                        Text("Em breve disponível")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+
                         ForEach(cryptoMethods, id: \.label) { method in
                             PaymentOptionView(
                                 label: method.label,
                                 iconName: method.icon,
-                                isSelected: selectedPaymentMethod == method.label,
-                                onTap: { selectedPaymentMethod = method.label }
+                                isSelected: false, // sempre falso, já que está desabilitado
+                                onTap: { },
+                                isDisabled: true
                             )
                         }
                     }
@@ -226,3 +232,4 @@ struct ReservationSummaryView: View {
         return formatter.string(from: date)
     }
 }
+
