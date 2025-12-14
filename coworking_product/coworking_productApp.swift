@@ -14,6 +14,7 @@ import AWSS3StoragePlugin // ✅ Importa o plugin de Storage
 struct coworking_productApp: App {
     @AppStorage("isLoggedIn") private var isLoggedIn = false
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore = false
+    @State private var showSplash = true
 
     init() {
         Amplify.Logging.logLevel = .verbose
@@ -56,11 +57,17 @@ struct coworking_productApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if !hasLaunchedBefore {
-                ContentView()
-                    .onAppear { hasLaunchedBefore = true }
+            if showSplash {
+                SplashScreenView {
+                    showSplash = false
+                }
             } else {
-                isLoggedIn ? AnyView(MainView()) : AnyView(LoginView())
+                if !hasLaunchedBefore {
+                    ContentView()
+                        .onAppear { hasLaunchedBefore = true }
+                } else {
+                    isLoggedIn ? AnyView(MainView()) : AnyView(LoginView())
+                }
             }
         }
     }

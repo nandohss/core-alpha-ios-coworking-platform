@@ -2,12 +2,14 @@ import SwiftUI
 
 struct DateSelectionView: View {
     var coworking: Coworking
+    @Binding var selectedTab: Int
 
     @State private var selectedDate = Date()
     @State private var selectedHours: Set<Int> = []
     @State private var reservedHours: [Int] = []
     @State private var isLoading = false
     @StateObject private var viewModel = ReservaViewModel()
+    @Environment(\.dismiss) private var dismiss
 
     let availableHours = Array(8...20)
 
@@ -51,27 +53,15 @@ struct DateSelectionView: View {
                                 let isSelected = selectedHours.contains(hour)
                                 let isReserved = reservedHours.contains(hour)
 
-                                Text("\(hour)h")
-                                    .frame(maxWidth: .infinity)
-                                    .padding(10)
-                                    .background(isReserved
-                                                ? Color.gray.opacity(0.01)
-                                                : isSelected
-                                                ? Color.gray.opacity(0.9)
-                                                  : Color.gray.opacity(0.10))
-                                    .cornerRadius(8)
-                                    .foregroundColor(isReserved ? .white : .black)
-                                    .onTapGesture {
-                                        guard !isReserved else { return }
-                                        withAnimation(.easeInOut(duration: 0.2)) {
-                                            if isSelected {
-                                                selectedHours.remove(hour)
-                                            } else {
-                                                selectedHours.insert(hour)
-                                            }
+                                HourCell(hour: hour, isSelected: isSelected, isReserved: isReserved) {
+                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                        if isSelected {
+                                            selectedHours.remove(hour)
+                                        } else {
+                                            selectedHours.insert(hour)
                                         }
                                     }
-                                    .disabled(isReserved)
+                                }
                             }
                         }
                     }
@@ -101,11 +91,12 @@ struct DateSelectionView: View {
                 }
 
                 NavigationLink(
-                    destination: ReservationSummaryView(
+                    destination: ReservationSummaryViewWrapper(
                         coworking: coworking,
                         selectedDate: selectedDate,
                         selectedHours: selectedHours.sorted(),
-                        totalPrice: totalPrice
+                        totalPrice: totalPrice,
+                        selectedTab: $selectedTab
                     )
                 ) {
                     Text("Confirmar Reserva")
@@ -122,10 +113,10 @@ struct DateSelectionView: View {
             .background(.ultraThinMaterial)
         }
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(true)
         .onAppear {
             Task { await carregarHorasReservadas() }
         }
+        .toolbar(.hidden, for: .tabBar)
     }
 
     func carregarHorasReservadas() async {
@@ -145,5 +136,32 @@ struct DateSelectionView: View {
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         return formatter.string(from: date)
+    }
+}
+
+private struct HourCell: View {
+    let hour: Int
+    let isSelected: Bool
+    let isReserved: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Text("\(hour)h")
+            .frame(maxWidth: .infinity)
+            .padding(10)
+            .background(backgroundColor)
+            .cornerRadius(8)
+            .foregroundColor(isReserved ? .white : .black)
+            .onTapGesture {
+                guard !isReserved else { return }
+                onTap()
+            }
+            .disabled(isReserved)
+    }
+
+    private var backgroundColor: Color {
+        if isReserved { return Color.gray.opacity(0.01) }
+        if isSelected { return Color.gray.opacity(0.9) }
+        return Color.gray.opacity(0.10)
     }
 }

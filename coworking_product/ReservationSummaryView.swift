@@ -7,13 +7,16 @@ struct ReservationSummaryViewWrapper: View {
     var selectedHours: [Int]
     var totalPrice: Double
 
+    @Binding var selectedTab: Int
+
     var body: some View {
         NavigationStack {
             ReservationSummaryView(
                 coworking: coworking,
                 selectedDate: selectedDate,
                 selectedHours: selectedHours,
-                totalPrice: totalPrice
+                totalPrice: totalPrice,
+                selectedTab: $selectedTab
             )
         }
     }
@@ -24,6 +27,8 @@ struct ReservationSummaryView: View {
     var selectedDate: Date
     var selectedHours: [Int]
     var totalPrice: Double
+
+    @Binding var selectedTab: Int
 
     @State private var selectedPaymentMethod = "Cartão de Crédito"
     @State private var voucherCode = ""
@@ -202,9 +207,11 @@ struct ReservationSummaryView: View {
                 coworking: coworking,
                 selectedDate: selectedDate,
                 selectedHours: selectedHours,
-                paymentMethod: selectedPaymentMethod
+                paymentMethod: selectedPaymentMethod,
+                selectedTab: $selectedTab
             )
         }
+        .toolbar(.hidden, for: .tabBar)
     }
 
     func infoRow(label: String, systemImage: String, value: String) -> some View {
@@ -232,4 +239,3 @@ struct ReservationSummaryView: View {
         return formatter.string(from: date)
     }
 }
-

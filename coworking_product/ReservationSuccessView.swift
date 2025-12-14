@@ -12,6 +12,7 @@ struct ReservationSuccessView: View {
     var selectedDate: Date
     var selectedHours: [Int]
     var paymentMethod: String
+    @Binding var selectedTab: Int
 
     @Environment(\.dismiss) var dismiss
 
@@ -52,7 +53,10 @@ struct ReservationSuccessView: View {
             Spacer()
 
             // Botão para navegar para "Minhas Reservas"
-            NavigationLink(destination: MyReservationsView()) {
+            Button(action: {
+                dismiss()
+                selectedTab = 3
+            }) {
                 Text("Ver Minhas Reservas")
                     .foregroundColor(.white)
                     .padding()
@@ -66,6 +70,7 @@ struct ReservationSuccessView: View {
         }
         .padding()
         .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .tabBar)
     }
 
     func detailRow(_ title: String, _ value: String) -> some View {
@@ -86,3 +91,4 @@ struct ReservationSuccessView: View {
         return formatter.string(from: selectedDate)
     }
 }
+

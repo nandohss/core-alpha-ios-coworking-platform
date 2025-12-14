@@ -4,8 +4,8 @@ import Amplify
 
 // Enum global compartilhada por todo o app
 enum SpaceFormField: Hashable {
-    case nome, email, ddd, telefone
-    case cpf, cnpj, razaoSocial
+    case email, ddd, telefone
+    case cnpj, razaoSocial
     case rua, numero, complemento, bairro, cidade
     case capacidade, descricao, regras
     case precoHora, precoDia
@@ -141,6 +141,11 @@ struct AddOrEditSpaceFormView: View {
             .sheet(isPresented: $mostrarImagePicker) {
                 ImagePicker(image: $imagemSelecionada)
             }
+            .onChange(of: imagemSelecionada) { newImage in
+                if let img = newImage {
+                    imagemSelecionada = cropToSquare(img)
+                }
+            }
         }
         .ignoresSafeArea(.keyboard)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notif in
@@ -160,18 +165,7 @@ struct AddOrEditSpaceFormView: View {
     // ---------- ETAPAS ----------
 
     private var etapaDadosPessoais: some View {
-        SectionView(title: "Seus dados") {
-            CustomField(title: "Nome completo", text: $formData.nome)
-                .focused($focusedField, equals: .nome)
-                .id(SpaceFormField.nome)
-
-            CustomField(title: "CPF", text: $formData.cpf, keyboard: .numberPad, error: formData.erroCPF ? "CPF inválido" : nil)
-                .onChange(of: formData.cpf) { v in
-                    formData.cpf = formatarCPF(v.filter { $0.isNumber })
-                }
-                .focused($focusedField, equals: .cpf)
-                .id(SpaceFormField.cpf)
-
+        SectionView(title: "Informações básicas") {
             CustomField(title: "CNPJ (opcional)", text: $formData.cnpj, keyboard: .numberPad, error: formData.erroCNPJ ? "CNPJ inválido" : nil)
                 .onChange(of: formData.cnpj) { newValue in
                     formData.cnpj = String(newValue.filter(\.isNumber).prefix(14))
@@ -179,7 +173,7 @@ struct AddOrEditSpaceFormView: View {
                 .focused($focusedField, equals: .cnpj)
                 .id(SpaceFormField.cnpj)
 
-            CustomField(title: "E‑mail", text: $formData.email, keyboard: .emailAddress, error: formData.erroEmail ? "E-mail inválido" : nil)
+            CustomField(title: "E‑mail corporativo", text: $formData.email, keyboard: .emailAddress, error: formData.erroEmail ? "E-mail inválido" : nil)
                 .onChange(of: formData.email) { newValue in
                     formData.email = newValue
                 }
@@ -272,19 +266,27 @@ struct AddOrEditSpaceFormView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Imagem do espaço").font(.caption).foregroundColor(.gray)
-                if let imagem = imagemSelecionada {
-                    Image(uiImage: imagem)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 160)
-                        .cornerRadius(10)
-                } else {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.1))
-                        .frame(height: 160)
-                        .overlay(Text("Nenhuma imagem selecionada").foregroundColor(.gray))
-                        .cornerRadius(10)
+
+                ZStack {
+                    if let imagem = imagemSelecionada {
+                        Image(uiImage: imagem)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 180)
+                            .clipped()
+                            .cornerRadius(10)
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(height: 180)
+                            .overlay(
+                                Text("Nenhuma imagem selecionada")
+                                    .foregroundColor(.gray)
+                            )
+                            .cornerRadius(10)
+                    }
                 }
+
                 Button("Selecionar imagem") {
                     mostrarImagePicker = true
                 }
@@ -331,7 +333,6 @@ struct AddOrEditSpaceFormView: View {
 
     private func validarCamposEtapaAtual() {
         if etapaAtual == 0 {
-            formData.erroCPF = !isCPFValido(formData.cpf)
             formData.erroCNPJ = !formData.cnpj.isEmpty && !isCNPJValido(formData.cnpj)
             formData.erroEmail = !isEmailValido(formData.email)
         }
@@ -339,9 +340,7 @@ struct AddOrEditSpaceFormView: View {
     private func etapaValida() -> Bool {
         switch etapaAtual {
         case 0:
-            return !formData.nome.isEmpty &&
-                   !formData.email.isEmpty && !formData.erroEmail &&
-                   !formData.cpf.isEmpty && !formData.erroCPF &&
+            return !formData.email.isEmpty && !formData.erroEmail &&
                    formData.ddd.count == 2 &&
                    formData.numeroTelefone.filter { $0.isNumber }.count >= 8
         case 1:
@@ -360,6 +359,29 @@ struct AddOrEditSpaceFormView: View {
             return false
         }
     }
+
+    private func cropToSquare(_ image: UIImage) -> UIImage {
+        let originalSize = image.size
+        let length = min(originalSize.width, originalSize.height)
+        let originX = (originalSize.width - length) / 2.0
+        let originY = (originalSize.height - length) / 2.0
+        let cropRect = CGRect(x: originX, y: originY, width: length, height: length)
+
+        guard let cgImage = image.cgImage else { return image }
+
+        // Convert cropRect to pixel coordinates respecting image scale and orientation
+        let scale = image.scale
+        let pixelRect = CGRect(x: cropRect.origin.x * scale,
+                               y: cropRect.origin.y * scale,
+                               width: cropRect.size.width * scale,
+                               height: cropRect.size.height * scale)
+
+        guard let croppedCG = cgImage.cropping(to: pixelRect) else { return image }
+
+        // Preserve original image scale and orientation
+        return UIImage(cgImage: croppedCG, scale: image.scale, orientation: image.imageOrientation)
+    }
 }
 
 // Helpers como NavBtnStyle, uploadImagemParaS3, etc. vêm depois, se necessário.
+
