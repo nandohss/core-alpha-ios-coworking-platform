@@ -14,6 +14,7 @@ import AWSS3StoragePlugin // ✅ Importa o plugin de Storage
 struct coworking_productApp: App {
     @AppStorage("isLoggedIn") private var isLoggedIn = false
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore = false
+    @AppStorage("hasCompletedProfile") private var hasCompletedProfile = false
     @State private var showSplash = true
 
     init() {
@@ -66,7 +67,19 @@ struct coworking_productApp: App {
                     ContentView()
                         .onAppear { hasLaunchedBefore = true }
                 } else {
-                    isLoggedIn ? AnyView(MainView()) : AnyView(LoginView())
+                    if isLoggedIn {
+                        if !hasCompletedProfile {
+                            CompleteUserProfileView(isPresented: .constant(true))
+                                .onDisappear {
+                                    // Quando o usuário finalizar o cadastro dentro da view, marcamos como completo
+                                    hasCompletedProfile = true
+                                }
+                        } else {
+                            AnyView(MainView())
+                        }
+                    } else {
+                        AnyView(LoginView())
+                    }
                 }
             }
         }
