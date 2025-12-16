@@ -2,29 +2,34 @@ import SwiftUI
 import Amplify
 import UIKit
 
+// MARK: - Blur util (mantido, caso use depois)
 struct VisualEffectBlur: UIViewRepresentable {
     var style: UIBlurEffect.Style
 
     func makeUIView(context: Context) -> UIVisualEffectView {
-        return UIVisualEffectView(effect: UIBlurEffect(style: style))
+        UIVisualEffectView(effect: UIBlurEffect(style: style))
     }
 
     func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
 
+// MARK: - Login View
 struct LoginView: View {
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
-    @AppStorage("userId") var userId: String = "" // ✅ Armazena userId (sub do Cognito)
+    @AppStorage("userId") var userId: String = ""
 
     @State private var isAmplifyReady = false
     @State private var isLoading = false
 
     var body: some View {
         ZStack {
-            LinearGradient(gradient: Gradient(colors: [Color.white, Color(.systemGray5)]),
-                           startPoint: .top,
-                           endPoint: .bottom)
-                .edgesIgnoringSafeArea(.all)
+            // Background light
+            LinearGradient(
+                gradient: Gradient(colors: [Color.white, Color(.systemGray6)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
             VStack {
                 Spacer()
@@ -33,14 +38,14 @@ struct LoginView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 20)
 
-                HStack(spacing: 30) {
-                    SocialButton(imageName: "facebook", altText: "Facebook") {
-                        print("Facebook login não implementado")
-                    }
-
-                    SocialButton(imageName: "google", altText: "Google") {
+                // Social buttons
+                HStack(spacing: 24) {
+                    SocialButton(
+                        imageName: "google",
+                        altText: "Google"
+                    ) {
                         Task {
                             guard isAmplifyReady else { return }
 
@@ -49,28 +54,33 @@ struct LoginView: View {
                                 _ = await Amplify.Auth.signOut()
                             }
 
-                            await loginComGoogle()
+                            loginComGoogle()
                         }
                     }
 
-                    SocialButton(imageName: "metamask_logo", altText: "MetaMask") {
-                        print("MetaMask login não implementado")
+                    SocialButton(
+                        imageName: "metamask_logo",
+                        altText: "MetaMask (temporariamente indisponível)"
+                    ) {
+                        // desativado por enquanto
                     }
+                    .disabled(true)
+                    .opacity(0.8) // deixa visível mesmo desativado
                 }
 
                 Text("Conecte")
                     .foregroundColor(.gray)
-                    .padding(.top, 40)
+                    .padding(.top, 32)
 
-                Button(action: {
+                Button {
                     print("Cadastro tradicional")
-                }) {
+                } label: {
                     Text("Criar conta")
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.black)
                         .foregroundColor(.white)
-                        .cornerRadius(10)
+                        .cornerRadius(12)
                 }
                 .padding(.horizontal, 30)
                 .padding(.top, 16)
@@ -88,6 +98,7 @@ struct LoginView: View {
         }
     }
 
+    // MARK: - Amplify
     func verificarConfiguracaoAmplify() {
         Task {
             do {
@@ -102,19 +113,24 @@ struct LoginView: View {
     }
 
     func loginComGoogle() {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first else {
+        guard
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first
+        else {
             print("❌ Janela principal não encontrada")
             return
         }
 
         Task {
             do {
-                let result = try await Amplify.Auth.signInWithWebUI(for: .google, presentationAnchor: window)
-                print("✅ Login com Google concluído: \(result)")
+                let result = try await Amplify.Auth.signInWithWebUI(
+                    for: .google,
+                    presentationAnchor: window
+                )
+                print("✅ Login Google:", result)
                 buscarDadosDoUsuario()
             } catch {
-                print("❌ Erro no login com Google: \(error)")
+                print("❌ Erro login Google:", error)
             }
         }
     }
@@ -125,36 +141,42 @@ struct LoginView: View {
 
             do {
                 let attributes = try await Amplify.Auth.fetchUserAttributes()
-                let email = attributes.first(where: { $0.key == .email })?.value ?? ""
-                let name = attributes.first(where: { $0.key == .name })?.value ?? ""
-                let sub = attributes.first(where: { $0.key.rawValue == "sub" })?.value ?? ""
-                let apelido = "sem_apelido"
+                let email = attributes.first { $0.key == .email }?.value ?? ""
+                let name = attributes.first { $0.key == .name }?.value ?? ""
+                let sub = attributes.first { $0.key.rawValue == "sub" }?.value ?? ""
 
-                self.userId = sub // ✅ Salva o userId localmente
+                userId = sub
 
-                print("📥 Email: \(email)\n📥 Nome: \(name)\n📥 userId (sub): \(sub)")
+                registrarUsuarioNoBackend(
+                    userId: sub,
+                    email: email,
+                    name: name,
+                    apelido: "sem_apelido"
+                )
 
-                registrarUsuarioNoBackend(userId: sub, email: email, name: name, apelido: apelido)
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     isLoading = false
                     isLoggedIn = true
                 }
 
             } catch {
-                print("❌ Erro ao buscar atributos: \(error)")
+                print("❌ Erro atributos:", error)
                 isLoading = false
             }
         }
     }
 
-    func registrarUsuarioNoBackend(userId: String, email: String, name: String, apelido: String) {
+    func registrarUsuarioNoBackend(
+        userId: String,
+        email: String,
+        name: String,
+        apelido: String
+    ) {
         guard let url = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro/register") else {
-            print("❌ URL inválida")
             return
         }
 
-        let dados: [String: String] = [
+        let body: [String: String] = [
             "userId": userId,
             "email": email,
             "name": name,
@@ -164,28 +186,13 @@ struct LoginView: View {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONEncoder().encode(dados)
+        request.httpBody = try? JSONEncoder().encode(body)
 
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("❌ Erro ao chamar Lambda: \(error)")
-                return
-            }
-
-            guard let httpResponse = response as? HTTPURLResponse else {
-                print("❌ Resposta HTTP inválida")
-                return
-            }
-
-            print("📡 Lambda HTTP Status: \(httpResponse.statusCode)")
-
-            if let data = data {
-                print("📦 Resposta da Lambda: \(String(data: data, encoding: .utf8) ?? "sem conteúdo")")
-            }
-        }.resume()
+        URLSession.shared.dataTask(with: request).resume()
     }
 }
 
+// MARK: - Social Button
 struct SocialButton: View {
     var imageName: String
     var altText: String
@@ -194,13 +201,23 @@ struct SocialButton: View {
     var body: some View {
         Button(action: action) {
             Image(imageName)
+                .renderingMode(.original)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 40, height: 40)
-                .padding()
+                .frame(width: 40, height: 40)   // ícone maior
+                .frame(width: 72, height: 72)   // botão maior
                 .background(Color.white)
-                .cornerRadius(12)
-                .shadow(color: .gray.opacity(0.2), radius: 2, x: 0, y: 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.black.opacity(0.12), lineWidth: 1)
+                )
+                .cornerRadius(16)
+                .shadow(
+                    color: Color.black.opacity(0.08),
+                    radius: 10,
+                    x: 0,
+                    y: 6
+                )
         }
         .accessibilityLabel(Text(altText))
     }
