@@ -14,6 +14,8 @@ import AWSS3StoragePlugin // ✅ Importa o plugin de Storage
 struct coworking_productApp: App {
     @AppStorage("isLoggedIn") private var isLoggedIn = false
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore = false
+    @AppStorage("hasCompletedProfile") private var hasCompletedProfile = false
+    @State private var showSplash = true
 
     init() {
         Amplify.Logging.logLevel = .verbose
@@ -56,11 +58,29 @@ struct coworking_productApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if !hasLaunchedBefore {
-                ContentView()
-                    .onAppear { hasLaunchedBefore = true }
+            if showSplash {
+                SplashScreenView {
+                    showSplash = false
+                }
             } else {
-                isLoggedIn ? AnyView(MainView()) : AnyView(LoginView())
+                if !hasLaunchedBefore {
+                    ContentView()
+                        .onAppear { hasLaunchedBefore = true }
+                } else {
+                    if isLoggedIn {
+                        if !hasCompletedProfile {
+                            CompleteUserProfileView(isPresented: .constant(true))
+                                .onDisappear {
+                                    // Quando o usuário finalizar o cadastro dentro da view, marcamos como completo
+                                    hasCompletedProfile = true
+                                }
+                        } else {
+                            AnyView(MainView())
+                        }
+                    } else {
+                        AnyView(LoginView())
+                    }
+                }
             }
         }
     }

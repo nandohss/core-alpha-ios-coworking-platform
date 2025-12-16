@@ -7,13 +7,16 @@ struct ReservationSummaryViewWrapper: View {
     var selectedHours: [Int]
     var totalPrice: Double
 
+    @Binding var selectedTab: Int
+
     var body: some View {
         NavigationStack {
             ReservationSummaryView(
                 coworking: coworking,
                 selectedDate: selectedDate,
                 selectedHours: selectedHours,
-                totalPrice: totalPrice
+                totalPrice: totalPrice,
+                selectedTab: $selectedTab
             )
         }
     }
@@ -24,6 +27,8 @@ struct ReservationSummaryView: View {
     var selectedDate: Date
     var selectedHours: [Int]
     var totalPrice: Double
+
+    @Binding var selectedTab: Int
 
     @State private var selectedPaymentMethod = "Cartão de Crédito"
     @State private var voucherCode = ""
@@ -85,7 +90,8 @@ struct ReservationSummaryView: View {
                                 label: method.label,
                                 iconName: method.icon,
                                 isSelected: selectedPaymentMethod == method.label,
-                                onTap: { selectedPaymentMethod = method.label }
+                                onTap: { selectedPaymentMethod = method.label },
+                                isDisabled: false
                             )
                         }
                     }
@@ -94,12 +100,17 @@ struct ReservationSummaryView: View {
                         Text("Pagar com Criptomoeda")
                             .font(.headline)
 
+                        Text("Em breve disponível")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+
                         ForEach(cryptoMethods, id: \.label) { method in
                             PaymentOptionView(
                                 label: method.label,
                                 iconName: method.icon,
-                                isSelected: selectedPaymentMethod == method.label,
-                                onTap: { selectedPaymentMethod = method.label }
+                                isSelected: false, // sempre falso, já que está desabilitado
+                                onTap: { },
+                                isDisabled: true
                             )
                         }
                     }
@@ -196,9 +207,11 @@ struct ReservationSummaryView: View {
                 coworking: coworking,
                 selectedDate: selectedDate,
                 selectedHours: selectedHours,
-                paymentMethod: selectedPaymentMethod
+                paymentMethod: selectedPaymentMethod,
+                selectedTab: $selectedTab
             )
         }
+        .toolbar(.hidden, for: .tabBar)
     }
 
     func infoRow(label: String, systemImage: String, value: String) -> some View {

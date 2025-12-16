@@ -9,6 +9,12 @@ struct Coworking: Identifiable, Decodable {
     let descricao: String
     let categoria: String
     let subcategoria: String
+    let street: String?
+    let number: String?
+    let complement: String?
+    let state: String?
+    let country: String?
+    let regras: String?
     let facilities: [String]
 
     enum CodingKeys: String, CodingKey {
@@ -22,6 +28,12 @@ struct Coworking: Identifiable, Decodable {
         case descricao
         case categoria
         case subcategoria
+        case street
+        case number
+        case complement
+        case state
+        case country
+        case regras
         case facilities = "amenities"
     }
 }

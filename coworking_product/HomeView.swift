@@ -71,6 +71,7 @@ class CoworkingViewModel: ObservableObject {
 // MARK: - HomeView
 
 struct HomeView: View {
+    @Binding var selectedTab: Int
     @StateObject private var viewModel = CoworkingViewModel()
     @State private var searchText: String = ""
     @State private var selectedCategory: FormsConstants.CategoriaPrincipal = .escritorio
@@ -180,7 +181,8 @@ struct HomeView: View {
                                     NavigationLink {
                                         CoworkingDetailView(
                                             coworking: coworking,
-                                            facilities: coworking.facilities
+                                            facilities: coworking.facilities,
+                                            selectedTab: $selectedTab
                                         )
                                     } label: {
                                         CoworkingCardView(
@@ -214,3 +216,4 @@ struct HomeView: View {
         }
     }
 }
+

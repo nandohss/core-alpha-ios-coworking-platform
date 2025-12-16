@@ -34,9 +34,23 @@ class APIService {
         let body: [String: Any] = [
             "spaceId": spaceId,
             "name": form.nomeEspaco,
-            "city": form.cidade,
-            "country": "Brasil",
+            // Informações de contato / empresa
+            "email": form.email,
+            "cnpj": form.cnpj,
+            "ddd": form.ddd,
+            "numeroTelefone": form.numeroTelefone,
+            // Telefone completo normalizado (apenas dígitos)
+            "telefoneCompleto": (form.ddd + form.numeroTelefone).filter { $0.isNumber },
+            "razaoSocial": form.razaoSocial,
+            // Endereço
+            "street": form.enderecoRua,
+            "number": form.numero,
+            "complement": form.complemento,
             "district": form.bairro,
+            "city": form.cidade,
+            "state": form.estado,
+            "country": "Brasil",
+            // Dados do espaço
             "capacity": Int(form.capacidadePessoas) ?? 0,
             "amenities": Array(form.facilidadesSelecionadas),
             "availability": true,

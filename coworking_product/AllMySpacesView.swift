@@ -92,10 +92,24 @@ final class AllMySpacesViewModel: ObservableObject {
 // MARK: - View
 struct AllMySpacesView: View {
     @StateObject private var vm = AllMySpacesViewModel()
+    @State private var navigateToExistingSpaceId: String? = nil
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                NavigationLink(isActive: Binding(
+                    get: { navigateToExistingSpaceId != nil },
+                    set: { if !$0 { navigateToExistingSpaceId = nil } }
+                )) {
+                    if let id = navigateToExistingSpaceId {
+                        CoHosterSpaceManagementView(spaceId: id)
+                    } else {
+                        EmptyView()
+                    }
+                } label: {
+                    EmptyView()
+                }
+                .hidden()
                 // Top bar (busca + filtro) no estilo CoHosterReservationsView
                 SpacesTopBar(vm: vm)
                 content
@@ -105,7 +119,9 @@ struct AllMySpacesView: View {
             .toolbar {
                 // ✅ Somente o botão de adicionar; o botão Back padrão é do sistema
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { vm.showAddSpaceForm = true } label: {
+                    Button {
+                        vm.showAddSpaceForm = true
+                    } label: {
                         Image(systemName: "plus")
                     }
                     .accessibilityLabel("Adicionar espaço")
@@ -215,7 +231,7 @@ private struct SpacesList: View {
     var body: some View {
         List {
             ForEach(data, id: \.spaceId) { space in
-                NavigationLink(destination: SpaceDetailPlaceholder(name: space.name)) {
+                NavigationLink(destination: CoHosterSpaceManagementView(spaceId: space.spaceId)) {
                     SpaceRow(space: space)
                 }
                 .swipeActions(edge: .trailing) {

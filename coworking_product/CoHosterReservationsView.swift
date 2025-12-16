@@ -131,11 +131,36 @@ struct CoHosterReservationsView: View {
                     ForEach(grouped) { section in
                         Section {
                             ForEach(section.items) { r in
-                                ReservationRow(
-                                    reservation: r,
-                                    greenPrimary: greenPrimary,
-                                    grayPrimary: grayPrimary
-                                )
+                                NavigationLink {
+                                    CoHosterReservationDetailView(
+                                        reservation: CoHosterReservationViewData(
+                                            id: r.id,
+                                            code: r.id, // sem bookingCode no DTO, usamos id
+                                            spaceName: section.name,
+                                            roomLabel: nil,
+                                            capacity: 0,
+                                            startDate: r.startDate.toDate() ?? Date(),
+                                            endDate: r.endDate.toDate() ?? Date(),
+                                            createdAt: r.startDate.toDate() ?? Date(),
+                                            total: 0,
+                                            status: mapStatus(r.status),
+                                            guestName: r.userName ?? r.userEmail ?? r.userId,
+                                            guestEmail: r.userEmail ?? "",
+                                            guestPhone: nil,
+                                            cpf: nil,
+                                            cnpj: nil
+                                        ),
+                                        approveAction: { _ in },
+                                        rejectAction: { _ in },
+                                        cancelAction: { _ in }
+                                    )
+                                } label: {
+                                    ReservationRow(
+                                        reservation: r,
+                                        greenPrimary: greenPrimary,
+                                        grayPrimary: grayPrimary
+                                    )
+                                }
                             }
                         } header: {
                             HStack {
@@ -340,5 +365,15 @@ fileprivate extension String {
         // Assuming the dates are ISO8601 formatted strings with time zone
         let isoFormatter = ISO8601DateFormatter()
         return isoFormatter.date(from: self)
+    }
+}
+
+private func mapStatus(_ status: ReservationDTO.Status) -> CoHosterReservationViewData.Status {
+    switch status {
+    case .pending:   return .pending
+    case .confirmed: return .approved
+    case .refused:   return .rejected
+    case .canceled:  return .cancelled
+    case .reserved:  return .approved
     }
 }

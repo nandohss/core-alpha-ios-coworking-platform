@@ -48,7 +48,7 @@ struct MainView: View {
                         .tag(1)
 
                     // Aba 2 – Início
-                    HomeView()
+                    HomeView(selectedTab: $selectedTab)
                         .tabItem {
                             Image(systemName: "house.fill")
                             Text("Início")

@@ -253,7 +253,7 @@ private struct ManageSpacesTopTwo: View {
                         let itemWidth = min(maxCardWidth, available)
                         HStack {
                             Spacer(minLength: 0)
-                            NavigationLink(destination: SpaceDetailPlaceholder(name: items[0].name)) {
+                            NavigationLink(destination: CoHosterSpaceManagementView(spaceId: items[0].spaceId)) {
                                 SpaceGridCard(space: items[0])
                                     .frame(width: itemWidth)
                             }
@@ -270,7 +270,7 @@ private struct ManageSpacesTopTwo: View {
 
                         HStack(spacing: spacing) {
                             ForEach(items.prefix(2), id: \.spaceId) { space in
-                                NavigationLink(destination: SpaceDetailPlaceholder(name: space.name)) {
+                                NavigationLink(destination: CoHosterSpaceManagementView(spaceId: space.spaceId)) {
                                     SpaceGridCard(space: space)
                                         .frame(width: itemWidth)
                                 }
@@ -523,3 +523,4 @@ private struct SpaceDetailPlaceholder: View {
 // - MySpacesTabBar(selectedTab:)
 // - AllMySpacesView / AllMySpacesViewModel (já existentes)
 // - SpaceDTO (modelo do seu domínio)
+

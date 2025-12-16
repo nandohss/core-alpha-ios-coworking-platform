@@ -8,28 +8,56 @@
 import SwiftUI
 
 struct PaymentOptionView: View {
-    let label: String
-    let iconName: String
-    let isSelected: Bool
-    let onTap: () -> Void
+    var label: String
+    var iconName: String
+    var isSelected: Bool
+    var onTap: () -> Void
+    var isDisabled: Bool = false
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: {
+            if !isDisabled {
+                onTap()
+            }
+        }) {
             HStack(spacing: 12) {
                 Image(systemName: iconName)
-                    .frame(width: 24)
+                    .font(.title3)
+
                 Text(label)
-                    .fontWeight(.medium)
+                    .font(.subheadline)
+
                 Spacer()
-                if isSelected {
+
+                if isSelected && !isDisabled {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.gray)
+                        .font(.headline)
                 }
             }
             .padding()
-            .background(isSelected ? Color.gray.opacity(0.2) : Color.gray.opacity(0.07))
-            .cornerRadius(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(backgroundColor)
+            .foregroundColor(foregroundColor)
+            .cornerRadius(10)
         }
         .buttonStyle(PlainButtonStyle())
+        .disabled(isDisabled)
+        .opacity(isDisabled ? 0.4 : 1.0)
+    }
+
+    private var backgroundColor: Color {
+        if isDisabled {
+            return Color.gray.opacity(0.1)
+        } else {
+            return isSelected ? Color.black : Color.gray.opacity(0.1)
+        }
+    }
+
+    private var foregroundColor: Color {
+        if isDisabled {
+            return Color.gray
+        } else {
+            return isSelected ? Color.white : Color.black
+        }
     }
 }

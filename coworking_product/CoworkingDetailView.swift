@@ -3,6 +3,7 @@ import SwiftUI
 struct CoworkingDetailView: View {
     var coworking: Coworking
     var facilities: [String]
+    @Binding var selectedTab: Int
 
     @State private var isFavorited = false
 
@@ -55,12 +56,28 @@ struct CoworkingDetailView: View {
                             }
 
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(coworking.cidade)
-                                    .font(.subheadline)
-
-                                Text(coworking.bairro)
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
+                                // Linha 1: Rua e número (quando existirem)
+                                if let street = coworking.street, !street.isEmpty {
+                                    HStack(spacing: 4) {
+                                        Text(street)
+                                            .font(.subheadline)
+                                        if let number = coworking.number, !number.isEmpty {
+                                            Text(", \(number)")
+                                                .font(.subheadline)
+                                        }
+                                    }
+                                }
+                                // Linha 2: Cidade e Bairro
+                                HStack(spacing: 6) {
+                                    Text(coworking.cidade)
+                                        .font(.subheadline)
+                                    if !coworking.bairro.isEmpty {
+                                        Text("·").foregroundColor(.gray)
+                                        Text(coworking.bairro)
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
                             }
 
                             Text(coworking.descricao)
@@ -82,6 +99,45 @@ struct CoworkingDetailView: View {
                                 }
                                 .padding(.vertical, 4)
                             }
+
+                            Divider().padding(.vertical, 10)
+
+                            // Categoria e Subcategoria
+                            if !coworking.categoria.isEmpty || !coworking.subcategoria.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Categoria")
+                                        .font(.subheadline).fontWeight(.medium)
+                                    HStack(spacing: 8) {
+                                        if !coworking.categoria.isEmpty {
+                                            Text(coworking.categoria)
+                                                .font(.footnote)
+                                                .padding(.vertical, 4).padding(.horizontal, 8)
+                                                .background(Color.gray.opacity(0.15))
+                                                .cornerRadius(6)
+                                        }
+                                        if !coworking.subcategoria.isEmpty {
+                                            Text(coworking.subcategoria)
+                                                .font(.footnote)
+                                                .padding(.vertical, 4).padding(.horizontal, 8)
+                                                .background(Color.gray.opacity(0.15))
+                                                .cornerRadius(6)
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Regras
+                            if let regras = coworking.regras, !regras.isEmpty {
+                                Divider().padding(.vertical, 10)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Regras")
+                                        .font(.subheadline).fontWeight(.medium)
+                                    Text(regras)
+                                        .font(.footnote)
+                                        .foregroundColor(.gray)
+                                }
+                            }
+
                         }
                         .padding()
                         .frame(width: geometry.size.width, alignment: .leading)
@@ -98,7 +154,7 @@ struct CoworkingDetailView: View {
 
                     Spacer()
 
-                    NavigationLink(destination: DateSelectionView(coworking: coworking)) {
+                    NavigationLink(destination: DateSelectionView(coworking: coworking, selectedTab: $selectedTab)) {
                         Text("Reservar")
                             .foregroundColor(.white)
                             .padding(.vertical, 10)
@@ -118,5 +174,22 @@ struct CoworkingDetailView: View {
                 print("Facilities recebidas:", facilities)
             }
         }
+    }
+}
+
+private func formatPhone(_ digits: String) -> String {
+    let d = digits.filter { $0.isNumber }
+    if d.count >= 11 {
+        let ddd = d.prefix(2)
+        let mid = d.dropFirst(2).prefix(5)
+        let end = d.suffix(4)
+        return "(\(ddd)) \(mid)-\(end)"
+    } else if d.count >= 10 {
+        let ddd = d.prefix(2)
+        let mid = d.dropFirst(2).prefix(4)
+        let end = d.suffix(4)
+        return "(\(ddd)) \(mid)-\(end)"
+    } else {
+        return d
     }
 }
