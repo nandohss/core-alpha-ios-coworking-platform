@@ -50,3 +50,10 @@ func isEmailValido(_ email: String) -> Bool {
     let regex = #"^\S+@\S+\.\S+$"#
     return email.range(of: regex, options: .regularExpression) != nil
 }
+func onlyDigits(_ s: String) -> String { s.filter(\.isNumber) }
+
+func isRGValido(_ s: String) -> Bool {
+    let digits = onlyDigits(s)
+    return (5...12).contains(digits.count)
+}
+

@@ -17,6 +17,7 @@ struct VisualEffectBlur: UIViewRepresentable {
 struct LoginView: View {
     @AppStorage("isLoggedIn") var isLoggedIn: Bool = false
     @AppStorage("userId") var userId: String = ""
+    @AppStorage("hasCompletedProfile") var hasCompletedProfile: Bool = false
 
     @State private var isAmplifyReady = false
     @State private var isLoading = false
@@ -52,6 +53,7 @@ struct LoginView: View {
                             let session = try await Amplify.Auth.fetchAuthSession()
                             if session.isSignedIn {
                                 _ = await Amplify.Auth.signOut()
+                                hasCompletedProfile = false
                             }
 
                             loginComGoogle()
@@ -146,6 +148,8 @@ struct LoginView: View {
                 let sub = attributes.first { $0.key.rawValue == "sub" }?.value ?? ""
 
                 userId = sub
+                let completed = UserDefaults.standard.bool(forKey: "didCompleteProfile_\(sub)")
+                hasCompletedProfile = completed
 
                 registrarUsuarioNoBackend(
                     userId: sub,

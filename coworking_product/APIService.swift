@@ -141,6 +141,47 @@ class APIService {
         }.resume()
     }
 
+    /// Atualiza o perfil do usuário (PUT /users/{userId}) — manter separado do POST /register
+    static func salvarCadastroUsuario(_ payload: UserProfileUpdateRequest) async throws {
+        guard let url = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro/users/\(payload.userId)") else {
+            throw URLError(.badURL)
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let encoder = JSONEncoder()
+        do {
+            let bodyData = try encoder.encode(payload)
+            request.httpBody = bodyData
+            if let jsonString = String(data: bodyData, encoding: .utf8) {
+                print("📤 Enviando atualização de perfil (PUT /users):\n\(jsonString)")
+            }
+        } catch {
+            print("❌ Falha ao codificar payload:", error.localizedDescription)
+            throw error
+        }
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let http = response as? HTTPURLResponse else {
+            print("❌ Resposta inválida (não é HTTPURLResponse)")
+            throw NSError(domain: "APIService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Resposta inválida"])
+        }
+
+        let bodyText = data.isEmpty ? "<no body>" : (String(data: data, encoding: .utf8) ?? "<non-utf8 body>")
+        print("⬅️ Resposta atualização de perfil — HTTP \(http.statusCode)\nBody: \(bodyText)")
+
+        switch http.statusCode {
+        case 200...299:
+            // Sucesso. 204 não tem corpo; 200/201 podem ter JSON.
+            return
+        default:
+            let errorDescription = "Erro \(http.statusCode): \(bodyText)"
+            throw NSError(domain: "APIService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: errorDescription])
+        }
+    }
+
     // Reservas para Co-Hoster (Estratégia B: GET /reservations?coHosterId=...&status=...)
     static func fetchCoHosterReservations(hosterId: String, status: ReservationDTO.Status? = nil) async throws -> [ReservationDTO] {
         let base = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro")!
@@ -172,6 +213,27 @@ class APIService {
             throw NSError(domain: "APIService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Erro \(http.statusCode): \(body)"])
         }
     }
+}
+
+// MARK: - User Profile Models
+struct UserProfileDTO: Decodable {
+    let userId: String
+    let cpf: String
+    let rg: String
+    let interests: [String]
+    let acceptedTerms: Bool
+    let language: String
+    let currency: String
+}
+
+struct UserProfileUpdateRequest: Encodable {
+    let userId: String
+    let cpf: String
+    let rg: String
+    let interests: [String]
+    let acceptedTerms: Bool
+    let language: String
+    let currency: String
 }
 
 // MARK: - Modelos da API

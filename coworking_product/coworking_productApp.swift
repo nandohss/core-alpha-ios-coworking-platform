@@ -15,13 +15,24 @@ struct coworking_productApp: App {
     @AppStorage("isLoggedIn") private var isLoggedIn = false
     @AppStorage("hasLaunchedBefore") private var hasLaunchedBefore = false
     @AppStorage("hasCompletedProfile") private var hasCompletedProfile = false
+    @AppStorage("userId") private var userId: String = ""
     @State private var showSplash = true
+
+    private func syncProfileCompletionFromDefaults() {
+        if let id = UserDefaults.standard.string(forKey: "userId") {
+            let completed = UserDefaults.standard.bool(forKey: "didCompleteProfile_\(id)")
+            hasCompletedProfile = completed
+            print("🔄 Sync hasCompletedProfile =", completed, "for user", id)
+        }
+    }
 
     init() {
         Amplify.Logging.logLevel = .verbose
         configureAmplify()
         
         verificarHosterAoIniciar()
+        
+        syncProfileCompletionFromDefaults()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             print("✅ Pronto para login")
@@ -68,15 +79,23 @@ struct coworking_productApp: App {
                         .onAppear { hasLaunchedBefore = true }
                 } else {
                     if isLoggedIn {
-                        if !hasCompletedProfile {
-                            CompleteUserProfileView(isPresented: .constant(true))
-                                .onDisappear {
-                                    // Quando o usuário finalizar o cadastro dentro da view, marcamos como completo
-                                    hasCompletedProfile = true
-                                }
-                        } else {
-                            AnyView(MainView())
-                        }
+                        AnyView(MainView())
+                            .onAppear { syncProfileCompletionFromDefaults() }
+                            .onChange(of: userId) { _ in syncProfileCompletionFromDefaults() }
+                            .onChange(of: isLoggedIn) { _ in syncProfileCompletionFromDefaults() }
+                            .fullScreenCover(
+                                isPresented: Binding(
+                                    get: { isLoggedIn && !userId.isEmpty && !UserDefaults.standard.bool(forKey: "didCompleteProfile_\(userId)") },
+                                    set: { _ in }
+                                )
+                            ) {
+                                CompleteUserProfileView(
+                                    isPresented: Binding(
+                                        get: { !hasCompletedProfile },
+                                        set: { _ in }
+                                    )
+                                )
+                            }
                     } else {
                         AnyView(LoginView())
                     }
@@ -85,3 +104,4 @@ struct coworking_productApp: App {
         }
     }
 }
+

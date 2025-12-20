@@ -4,7 +4,7 @@ enum UserProfileField: Hashable {
     case cpf, rg
 }
 
-// MARK: - Flow Layout (iOS 16+)##
+// MARK: - Flow Layout (iOS 16+)
 struct TagFlowLayout: Layout {
     var spacing: CGFloat = 8
 
@@ -13,16 +13,19 @@ struct TagFlowLayout: Layout {
         subviews: Subviews,
         cache: inout ()
     ) -> CGSize {
-        let maxWidth = proposal.width ?? .infinity
+        let availableWidth = proposal.width ?? CGFloat.greatestFiniteMagnitude
 
         var x: CGFloat = 0
         var y: CGFloat = 0
         var rowHeight: CGFloat = 0
+        var maxLineWidth: CGFloat = 0
 
         for view in subviews {
             let size = view.sizeThatFits(.unspecified)
 
-            if x + size.width > maxWidth {
+            if x + size.width > availableWidth {
+                let lineWidth = x == 0 ? size.width : (x - spacing)
+                maxLineWidth = max(maxLineWidth, lineWidth)
                 x = 0
                 y += rowHeight + spacing
                 rowHeight = 0
@@ -32,7 +35,16 @@ struct TagFlowLayout: Layout {
             rowHeight = max(rowHeight, size.height)
         }
 
-        return CGSize(width: maxWidth, height: y + rowHeight)
+        let lastLineWidth = x == 0 ? 0 : (x - spacing)
+        maxLineWidth = max(maxLineWidth, lastLineWidth)
+
+        let finalWidth = min(maxLineWidth, availableWidth)
+        let finalHeight = y + rowHeight
+
+        return CGSize(
+            width: finalWidth.isFinite ? finalWidth : 0,
+            height: finalHeight.isFinite ? finalHeight : 0
+        )
     }
 
     func placeSubviews(
@@ -128,12 +140,15 @@ struct SimpleTextField: View {
             TextField(title, text: $text)
                 .keyboardType(keyboard)
                 .textFieldStyle(.roundedBorder)
+                .disableAutocorrection(true)
+                .textInputAutocapitalization(.never)
+                // Observação: submitLabel/onSubmit não funcionam em numberPad (não há tecla Return).
+                .submitLabel(.done)
         }
     }
 }
 
 // MARK: - Validators
-private func onlyDigits(_ s: String) -> String { s.filter(\.isNumber) }
 
 private func isValidCPF(_ s: String) -> Bool {
     let digits = onlyDigits(s)
@@ -154,7 +169,6 @@ final class CompleteUserProfileData: ObservableObject {
     @Published var interests: Set<String> = []
     @Published var acceptedTerms: Bool = false
 
-    // Errors
     @Published var cpfError: Bool = false
     @Published var rgError: Bool = false
     @Published var termsError: Bool = false
@@ -166,11 +180,20 @@ struct CompleteUserProfileView: View {
     @StateObject private var data = CompleteUserProfileData()
     @FocusState private var focused: UserProfileField?
 
+    @AppStorage("hasCompletedProfile") private var hasCompletedProfile = false
+    @AppStorage("userId") private var userId: String = ""
+
+    @State private var isSaving = false
+    @State private var saveError: String?
+
+    // Workaround para o bug do SwiftUI em anexar o toolbar do teclado no primeiro foco (especialmente com numberPad).
+    @State private var didRefocusOnceFor: UserProfileField? = nil
+
     private let interestOptions = [
         "Escritório e Negócios",
         "Beleza e Estética",
         "Saúde e Bem-estar",
-        "imagem e Produção",
+        "Imagem e Produção",
         "Educação e Sociais",
         "Moda e Design",
         "Tecnologia e Criatividade"
@@ -184,7 +207,8 @@ struct CompleteUserProfileView: View {
                     SimpleSection(title: "Dados pessoais") {
                         SimpleTextField(title: "CPF", text: $data.cpf, keyboard: .numberPad)
                             .onChange(of: data.cpf) { newValue in
-                                data.cpf = String(onlyDigits(newValue).prefix(11))
+                                let filtered = String(onlyDigits(newValue).prefix(11))
+                                if filtered != data.cpf { data.cpf = filtered }
                             }
                             .focused($focused, equals: .cpf)
 
@@ -196,7 +220,8 @@ struct CompleteUserProfileView: View {
 
                         SimpleTextField(title: "RG", text: $data.rg, keyboard: .numberPad)
                             .onChange(of: data.rg) { newValue in
-                                data.rg = String(onlyDigits(newValue).prefix(12))
+                                let filtered = String(onlyDigits(newValue).prefix(12))
+                                if filtered != data.rg { data.rg = filtered }
                             }
                             .focused($focused, equals: .rg)
 
@@ -232,24 +257,48 @@ struct CompleteUserProfileView: View {
                         }
                     }
                 }
-                .padding()
+                .padding(16)
             }
+            .dismissKeyboardOnTap()
             .navigationTitle("Completar cadastro")
+            .interactiveDismissDisabled(true)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { isPresented = false } label: { Image(systemName: "xmark") }
-                }
+                // Botão do topo
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Salvar") { save() }
-                        .disabled(!isValid())
+                        .disabled(!isValid() || isSaving)
                 }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("OK") {
-                        focused = nil
+            }
+        }
+        // Importante: NÃO usar .ignoresSafeArea(.keyboard) aqui (pode atrapalhar o accessory do teclado)
+        .overlay {
+            if isSaving {
+                ZStack {
+                    Color.black.opacity(0.3).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView("Salvando...")
+                            .progressViewStyle(.circular)
                     }
-                    .foregroundStyle(.black)
+                    .padding(20)
+                    .background(Color(.systemBackground))
+                    .cornerRadius(12)
+                    .shadow(radius: 10)
                 }
+            }
+        }
+        .alert("Erro", isPresented: Binding<Bool>(
+            get: { saveError != nil },
+            set: { newValue in if !newValue { saveError = nil } }
+        )) {
+            Button("OK", role: .cancel) { saveError = nil }
+        } message: {
+            Text(saveError ?? "")
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("OK") { focused = nil }
+                    .foregroundStyle(.black)
             }
         }
     }
@@ -267,11 +316,37 @@ struct CompleteUserProfileView: View {
         data.termsError = !data.acceptedTerms
         guard isValid() else { return }
 
-        // TODO: Integrate with your persistence/API layer
-        isPresented = false
+        let payload = UserProfileUpdateRequest(
+            userId: userId,
+            cpf: data.cpf,
+            rg: data.rg,
+            interests: Array(data.interests),
+            acceptedTerms: data.acceptedTerms,
+            language: data.language,
+            currency: data.currency
+        )
+
+        Task {
+            await MainActor.run { isSaving = true }
+            do {
+                try await APIService.salvarCadastroUsuario(payload)
+                await MainActor.run {
+                    hasCompletedProfile = true
+                    UserDefaults.standard.set(true, forKey: "didCompleteProfile_\(userId)")
+                    isPresented = false
+                }
+            } catch {
+                await MainActor.run {
+                    saveError = "Falha ao salvar cadastro. Tente novamente."
+                }
+                print("❌ Erro ao enviar cadastro:", error)
+            }
+            await MainActor.run { isSaving = false }
+        }
     }
 }
 
 #Preview {
     CompleteUserProfileView(isPresented: .constant(true))
 }
+

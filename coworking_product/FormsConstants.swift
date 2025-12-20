@@ -38,7 +38,7 @@ struct FormsConstants {
     static let categorias: [String: [String]] = [
         "Escritório e Negócios": ["Escritório privativo","Sala de reunião","Auditório","Coworking tradicional"],
         "Beleza e Estética": ["Sala de estética","Barbearia","Maquiagem","Massagem"],
-        "Saúde e Bem‑estar": ["Psicologia","Fisioterapia","Consultório médico"],
+        "Saúde e Bem‑estar": ["Psicologia", "Odontologia","Fisioterapia","Consultório médico"],
         "Imagem e Produção": ["Estúdio de fotografia","Estúdio de vídeo","Podcast"],
         "Educação e Artes": ["Sala de aula","Sala de dança","Teatro"],
         "Eventos e Sociais": ["Sala para eventos","Rooftop","Espaço gourmet"],
