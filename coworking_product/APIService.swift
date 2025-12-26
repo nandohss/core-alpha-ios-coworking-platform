@@ -6,7 +6,6 @@ struct ReservationDTO: Decodable, Identifiable, Equatable, Hashable {
         case confirmed = "CONFIRMED"
         case canceled = "CANCELED"
         case refused = "REFUSED"
-        case reserved = "reserved" // Se o backend pode retornar assim!
     }
     
     let id: String

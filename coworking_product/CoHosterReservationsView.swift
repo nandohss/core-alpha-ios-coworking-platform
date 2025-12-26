@@ -281,9 +281,7 @@ private struct ReservationRow: View {
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
-                Text("Código: \(reservation.id)") // bookingCode não existe - id usado como placeholder
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+
             }
         }
         .padding(.vertical, 6)
@@ -322,7 +320,7 @@ private struct StatusChip: View {
             .background(Capsule().fill(bgColor))
             .overlay(
                 Group {
-                    if case .reserved = status {
+                    if case .confirmed = status {
                         Capsule().stroke(greenPrimary.opacity(0.6), lineWidth: 1)
                     }
                 }
@@ -336,16 +334,14 @@ private struct StatusChip: View {
         case .pending:   return "Pendente"
         case .canceled:  return "Cancelada"
         case .refused:   return "Recusada"
-        case .reserved:  return "Reservado"
         }
     }
     private var fgColor: Color {
         switch status {
         case .confirmed: return greenPrimary
-        case .pending:   return grayPrimary
+        case .pending:   return .yellow
         case .canceled:  return .red
         case .refused:   return .red
-        case .reserved:  return greenPrimary
         }
     }
     private var bgColor: Color {
@@ -354,7 +350,6 @@ private struct StatusChip: View {
         case .pending:   return grayPrimary.opacity(0.12)
         case .canceled:  return Color.red.opacity(0.12)
         case .refused:   return Color.red.opacity(0.12)
-        case .reserved:  return greenPrimary.opacity(0.06)
         }
     }
 }
@@ -374,6 +369,5 @@ private func mapStatus(_ status: ReservationDTO.Status) -> CoHosterReservationVi
     case .confirmed: return .approved
     case .refused:   return .rejected
     case .canceled:  return .cancelled
-    case .reserved:  return .approved
     }
 }
