@@ -1,6 +1,6 @@
 import Foundation
 
-struct ReservationDTO: Decodable, Identifiable, Equatable, Hashable {
+struct CoHosterReservationDTO: Decodable, Identifiable, Equatable, Hashable {
     enum Status: String, Decodable, CaseIterable {
         case pending = "PENDING"
         case confirmed = "CONFIRMED"
@@ -182,7 +182,7 @@ class APIService {
     }
 
     // Reservas para Co-Hoster (Estratégia B: GET /reservations?coHosterId=...&status=...)
-    static func fetchCoHosterReservations(hosterId: String, status: ReservationDTO.Status? = nil) async throws -> [ReservationDTO] {
+    static func fetchCoHosterReservations(hosterId: String, status: CoHosterReservationDTO.Status? = nil) async throws -> [CoHosterReservationDTO] {
         let base = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro")!
         var components = URLComponents(url: base.appendingPathComponent("reservations"), resolvingAgainstBaseURL: false)!
         var items: [URLQueryItem] = [URLQueryItem(name: "hosterId", value: hosterId)]
@@ -203,7 +203,7 @@ class APIService {
 
         switch http.statusCode {
         case 200:
-            return try JSONDecoder().decode([ReservationDTO].self, from: data)
+            return try JSONDecoder().decode([CoHosterReservationDTO].self, from: data)
         case 404:
             // Trate 404 como lista vazia se o backend usar 404 para "sem resultados"
             return []
