@@ -253,7 +253,9 @@ private struct ManageSpacesTopTwo: View {
                         let itemWidth = min(maxCardWidth, available)
                         HStack {
                             Spacer(minLength: 0)
-                            NavigationLink(destination: CoHosterSpaceManagementView(spaceId: items[0].spaceId)) {
+                            NavigationLink(destination: {
+                                CoHosterSpaceManagementView(viewModel: makeSpaceManagementViewModel(spaceId: items[0].spaceId))
+                            }) {
                                 SpaceGridCard(space: items[0])
                                     .frame(width: itemWidth)
                             }
@@ -270,7 +272,9 @@ private struct ManageSpacesTopTwo: View {
 
                         HStack(spacing: spacing) {
                             ForEach(items.prefix(2), id: \.spaceId) { space in
-                                NavigationLink(destination: CoHosterSpaceManagementView(spaceId: space.spaceId)) {
+                                NavigationLink(destination: {
+                                    CoHosterSpaceManagementView(viewModel: makeSpaceManagementViewModel(spaceId: space.spaceId))
+                                }) {
                                     SpaceGridCard(space: space)
                                         .frame(width: itemWidth)
                                 }
