@@ -3,17 +3,6 @@
 
 import Foundation
 
-extension ManagedSpace {
-    init(dto: ManagedSpaceDTO) {
-        self.id = dto.id
-        self.title = dto.title
-        self.capacity = dto.capacity
-        self.pricePerHour = dto.pricePerHour
-        self.description = dto.description
-        self.isEnabled = dto.isEnabled
-    }
-}
-
 extension ManagedSpaceDTO {
     init(domain: ManagedSpace) {
         self.id = domain.id
@@ -22,5 +11,10 @@ extension ManagedSpaceDTO {
         self.pricePerHour = domain.pricePerHour
         self.description = domain.description
         self.isEnabled = domain.isEnabled
+        let reverseMap: [Int: String] = [1: "Seg", 2: "Ter", 3: "Qua", 4: "Qui", 5: "Sex", 6: "Sáb", 7: "Dom"]
+        let labels = domain.weekdays.compactMap { reverseMap[$0] }
+        self.diasSemana = labels
+        self.amenities = domain.amenities
     }
 }
+

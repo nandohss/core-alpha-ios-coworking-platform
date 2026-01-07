@@ -12,4 +12,13 @@ protocol SpaceManagementRepository {
     func saveAvailability(spaceId: String, weekdays: Set<Int>) async throws
     func saveRules(spaceId: String, minDurationMinutes: Int, bufferMinutes: Int) async throws
     func updateFlags(spaceId: String, isEnabled: Bool, autoApprove: Bool) async throws
+    func fetchFacilities() async throws -> [Facility]
+    func saveAll(
+        space: ManagedSpace,
+        facilityIDs: [String],
+        weekdays: Set<Int>,
+        minDurationMinutes: Int,
+        bufferMinutes: Int,
+        autoApprove: Bool
+    ) async throws
 }

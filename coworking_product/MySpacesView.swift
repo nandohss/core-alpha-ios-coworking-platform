@@ -254,7 +254,7 @@ private struct ManageSpacesTopTwo: View {
                         HStack {
                             Spacer(minLength: 0)
                             NavigationLink(destination: {
-                                CoHosterSpaceManagementView(viewModel: makeSpaceManagementViewModel(spaceId: items[0].spaceId))
+                                CoHosterSpaceManagementView(viewModel: makeSpaceManagementViewModel(spaceId: items[0].spaceId, authTokenProvider: { UserDefaults.standard.string(forKey: "authToken") }))
                             }) {
                                 SpaceGridCard(space: items[0])
                                     .frame(width: itemWidth)
@@ -273,7 +273,7 @@ private struct ManageSpacesTopTwo: View {
                         HStack(spacing: spacing) {
                             ForEach(items.prefix(2), id: \.spaceId) { space in
                                 NavigationLink(destination: {
-                                    CoHosterSpaceManagementView(viewModel: makeSpaceManagementViewModel(spaceId: space.spaceId))
+                                    CoHosterSpaceManagementView(viewModel: makeSpaceManagementViewModel(spaceId: space.spaceId, authTokenProvider: { UserDefaults.standard.string(forKey: "authToken") }))
                                 }) {
                                     SpaceGridCard(space: space)
                                         .frame(width: itemWidth)

@@ -6,30 +6,92 @@
 //
 
 import Foundation
+
+// baseURL: URL do seu backend, ex.: URL(string: "https://api.seuservidor.com")!
+// authTokenProvider: closure que retorna o token de autenticação para requisições
+
 @MainActor
 func makeSpaceManagementViewModel(spaceId: String) -> CoHosterSpaceManagementViewModel {
-    CoHosterSpaceManagementViewModel(
+    fatalError("This factory overload without backend dependencies has been removed. Use the overload that injects authTokenProvider/baseURL.")
+}
+
+@MainActor
+func makeSpaceManagementViewModel(
+    spaceId: String,
+    authTokenProvider: @escaping () -> String?
+) -> CoHosterSpaceManagementViewModel {
+    print("🔧 Injecting baseURL:", AppConfig.apiBaseURL.absoluteString)
+    let repository = SpaceManagementRepositoryImpl(baseURL: AppConfig.apiBaseURL, authTokenProvider: authTokenProvider)
+    return CoHosterSpaceManagementViewModel(
         spaceId: spaceId,
-        fetchSpaceUseCase: StubFetchSpaceUseCase(),
-        saveSpaceUseCase: StubSaveSpaceUseCase(),
-        uploadPhotoUseCase: StubUploadPhotoUseCase(),
-        saveFacilitiesUseCase: StubSaveFacilitiesUseCase(),
-        saveAvailabilityUseCase: StubSaveAvailabilityUseCase(),
-        saveRulesUseCase: StubSaveRulesUseCase(),
-        updateSpaceFlagsUseCase: StubUpdateSpaceFlagsUseCase()
+        fetchSpaceUseCase: RealFetchSpaceUseCase(repository: repository),
+        fetchFacilitiesUseCase: RealFetchFacilitiesUseCase(repository: repository),
+        saveSpaceUseCase: RealSaveSpaceUseCase(repository: repository),
+        uploadPhotoUseCase: NoopUploadPhotoUseCase(),
+        saveFacilitiesUseCase: NoopSaveFacilitiesUseCase(),
+        saveAvailabilityUseCase: NoopSaveAvailabilityUseCase(),
+        saveRulesUseCase: NoopSaveRulesUseCase(),
+        updateSpaceFlagsUseCase: NoopUpdateSpaceFlagsUseCase(),
+        saveSpaceAllUseCase: RealSaveSpaceAllUseCase(repository: repository)
     )
 }
 
-// Stubs for all required use case protocols:
-struct StubFetchSpaceUseCase: FetchSpaceUseCase {
+@MainActor
+func makeSpaceManagementViewModel(
+    spaceId: String,
+    baseURL: URL,
+    authTokenProvider: @escaping () -> String?
+) -> CoHosterSpaceManagementViewModel {
+    let repository = SpaceManagementRepositoryImpl(baseURL: baseURL, authTokenProvider: authTokenProvider)
+    return CoHosterSpaceManagementViewModel(
+        spaceId: spaceId,
+        fetchSpaceUseCase: RealFetchSpaceUseCase(repository: repository),
+        fetchFacilitiesUseCase: RealFetchFacilitiesUseCase(repository: repository),
+        saveSpaceUseCase: RealSaveSpaceUseCase(repository: repository),
+        uploadPhotoUseCase: NoopUploadPhotoUseCase(),
+        saveFacilitiesUseCase: NoopSaveFacilitiesUseCase(),
+        saveAvailabilityUseCase: NoopSaveAvailabilityUseCase(),
+        saveRulesUseCase: NoopSaveRulesUseCase(),
+        updateSpaceFlagsUseCase: NoopUpdateSpaceFlagsUseCase(),
+        saveSpaceAllUseCase: RealSaveSpaceAllUseCase(repository: repository)
+    )
+    // TODO: Injetar SaveSpaceAllUseCase no ViewModel quando o initializer aceitar a dependência agregada.
+}
+
+struct RealFetchSpaceUseCase: FetchSpaceUseCase {
+    let repository: SpaceManagementRepository
     func execute(spaceId: String) async throws -> ManagedSpace {
-        ManagedSpace(id: spaceId, title: "Stub", capacity: 1, pricePerHour: 0, description: "", isEnabled: true)
+        try await repository.fetchSpace(spaceId: spaceId)
     }
 }
-struct StubSaveSpaceUseCase: SaveSpaceUseCase { func execute(_ space: ManagedSpace) async throws {} }
-struct StubUploadPhotoUseCase: UploadPhotoUseCase { func execute(data: Data, filename: String, spaceId: String) async throws -> URL { URL(string: "https://example.com")! } }
-struct StubSaveFacilitiesUseCase: SaveFacilitiesUseCase { func execute(spaceId: String, facilityIDs: [String]) async throws {} }
-struct StubSaveAvailabilityUseCase: SaveAvailabilityUseCase { func execute(spaceId: String, weekdays: Set<Int>) async throws {} }
-struct StubSaveRulesUseCase: SaveRulesUseCase { func execute(spaceId: String, minDurationMinutes: Int, bufferMinutes: Int) async throws {} }
-struct StubUpdateSpaceFlagsUseCase: UpdateSpaceFlagsUseCase { func execute(spaceId: String, isEnabled: Bool, autoApprove: Bool) async throws {} }
+struct RealSaveSpaceUseCase: SaveSpaceUseCase {
+    let repository: SpaceManagementRepository
+    func execute(_ space: ManagedSpace) async throws {
+        try await repository.saveSpace(space)
+    }
+}
 
+struct RealFetchFacilitiesUseCase: FetchFacilitiesUseCase {
+    let repository: SpaceManagementRepository
+    func execute() async throws -> [Facility] {
+        try await repository.fetchFacilities()
+    }
+}
+
+// Temporary no-op implementations until real use cases are available
+
+struct NoopUploadPhotoUseCase: UploadPhotoUseCase {
+    func execute(data: Data, filename: String, spaceId: String) async throws -> URL { return URL(string: "about:blank")! }
+}
+struct NoopSaveFacilitiesUseCase: SaveFacilitiesUseCase {
+    func execute(spaceId: String, facilityIDs: [String]) async throws { }
+}
+struct NoopSaveAvailabilityUseCase: SaveAvailabilityUseCase {
+    func execute(spaceId: String, weekdays: Set<Int>) async throws { }
+}
+struct NoopSaveRulesUseCase: SaveRulesUseCase {
+    func execute(spaceId: String, minDurationMinutes: Int, bufferMinutes: Int) async throws { }
+}
+struct NoopUpdateSpaceFlagsUseCase: UpdateSpaceFlagsUseCase {
+    func execute(spaceId: String, isEnabled: Bool, autoApprove: Bool) async throws { }
+}

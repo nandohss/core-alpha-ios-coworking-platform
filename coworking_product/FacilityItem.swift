@@ -8,11 +8,12 @@
 import Foundation
 
 struct FacilityItem: Identifiable {
-    let id = UUID()
+    let id: UUID
     let label: String
     let icon: String
 
     init(from name: String) {
+        self.id = UUID()
         self.label = name
 
         switch name.lowercased() {
@@ -31,5 +32,20 @@ struct FacilityItem: Identifiable {
         default:
             self.icon = "questionmark"
         }
+    }
+
+    // Conveniências para integração com o domínio
+    init(from facility: Facility) {
+        if let symbol = facility.systemImage {
+            self.init(label: facility.name, icon: symbol)
+        } else {
+            self.init(from: facility.name)
+        }
+    }
+
+    init(label: String, icon: String) {
+        self.id = UUID()
+        self.label = label
+        self.icon = icon
     }
 }
