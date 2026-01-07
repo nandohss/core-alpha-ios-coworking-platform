@@ -343,6 +343,9 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
+				KnownAssetTags = (
+					New,
+				);
 				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
@@ -360,11 +363,12 @@
 				};
 			};
 			buildConfigurationList = CEC7AC642E176FAC00A6A102 /* Build configuration list for PBXProject "coworking_product" */;
-			developmentRegion = en;
+			developmentRegion = "pt-BR";
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				"pt-BR",
 			);
 			mainGroup = CEC7AC602E176FAC00A6A102;
 			minimizedProjectReferenceProxies = 1;

@@ -8,10 +8,13 @@
 import SwiftUI
 
 struct ReservationSuccessView: View {
+    enum Status { case pending, confirmed }
+    
     var coworking: Coworking
     var selectedDate: Date
     var selectedHours: [Int]
     var paymentMethod: String
+    var status: Status = .pending
     @Binding var selectedTab: Int
 
     @Environment(\.dismiss) var dismiss
@@ -20,23 +23,29 @@ struct ReservationSuccessView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            // Ícone de sucesso
-            Image(systemName: "checkmark.seal.fill")
+            // Ícone conforme status
+            Image(systemName: status == .confirmed ? "checkmark.seal.fill" : "clock.fill")
                 .resizable()
                 .frame(width: 80, height: 80)
-                .foregroundColor(.green)
+                .foregroundColor(status == .confirmed ? .green : .orange)
 
             // Mensagem principal
-            Text("Reserva Confirmada!")
+            Text(status == .confirmed ? "Reserva confirmada!" : "Solicitação enviada!")
                 .font(.title)
                 .fontWeight(.bold)
 
             // Subtexto
-            Text("Sua reserva em \"\(coworking.nome)\" foi realizada com sucesso.")
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .foregroundColor(.gray)
-                .padding(.horizontal)
+            Group {
+                if status == .confirmed {
+                    Text("Sua reserva em \"\(coworking.nome)\" foi confirmada com sucesso.")
+                } else {
+                    Text("Sua solicitação de reserva em \"\(coworking.nome)\" foi realizada com sucesso e está aguardando aprovação do co-hoster.")
+                }
+            }
+            .font(.subheadline)
+            .multilineTextAlignment(.center)
+            .foregroundColor(.gray)
+            .padding(.horizontal)
 
             // Detalhes da reserva
             VStack(alignment: .leading, spacing: 12) {

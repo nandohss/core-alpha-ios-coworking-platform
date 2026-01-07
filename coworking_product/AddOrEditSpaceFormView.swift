@@ -137,6 +137,7 @@ struct AddOrEditSpaceFormView: View {
                         }
                     }
                 }
+                .dismissKeyboardOnTap()
             }
             .sheet(isPresented: $mostrarImagePicker) {
                 ImagePicker(image: $imagemSelecionada)
@@ -384,4 +385,5 @@ struct AddOrEditSpaceFormView: View {
 }
 
 // Helpers como NavBtnStyle, uploadImagemParaS3, etc. vêm depois, se necessário.
+
 

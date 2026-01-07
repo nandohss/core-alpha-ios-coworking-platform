@@ -37,7 +37,7 @@ class ReservaViewModel: ObservableObject {
             spaceId_reservation: spaceId,
             date_reservation: date,
             hours_reservation: hours,
-            status: "reserved",
+            status: "PENDING",
             userId: userId
         )
 
@@ -66,7 +66,7 @@ class ReservaViewModel: ObservableObject {
                 }
 
                 if httpResponse.statusCode == 200 {
-                    self.status = "Reserva enviada com sucesso!"
+                    self.status = "Solicitação de reserva enviada com sucesso e aguardando aprovação do co-hoster."
                 } else {
                     self.errorMessage = "Erro do servidor: código \(httpResponse.statusCode)"
                 }
@@ -109,3 +109,4 @@ class ReservaViewModel: ObservableObject {
         }
     }
 }
+

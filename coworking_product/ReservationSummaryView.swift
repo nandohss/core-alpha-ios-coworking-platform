@@ -153,7 +153,7 @@ struct ReservationSummaryView: View {
                                         spaceId_reservation: coworking.id,
                                         date_reservation: dateStr,
                                         hours_reservation: hourStrings,
-                                        status: "reserved",
+                                        status: "PENDING",
                                         userId: userId
                                     )
 
@@ -208,6 +208,7 @@ struct ReservationSummaryView: View {
                 selectedDate: selectedDate,
                 selectedHours: selectedHours,
                 paymentMethod: selectedPaymentMethod,
+                status: .pending,
                 selectedTab: $selectedTab
             )
         }
@@ -239,3 +240,4 @@ struct ReservationSummaryView: View {
         return formatter.string(from: date)
     }
 }
+

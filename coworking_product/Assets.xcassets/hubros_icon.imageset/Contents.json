@@ -21,6 +21,7 @@
   "properties" : {
     "on-demand-resource-tags" : [
       "New"
-    ]
+    ],
+    "template-rendering-intent" : "template"
   }
 }

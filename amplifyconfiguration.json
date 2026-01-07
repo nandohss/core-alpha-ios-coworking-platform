@@ -1,0 +1,113 @@
+{
+    "UserAgent": "aws-amplify-cli/2.0",
+    "Version": "1.0",
+    "api": {
+        "plugins": {
+            "awsAPIPlugin": {
+                "amplifycoworkingapp": {
+                    "endpointType": "GraphQL",
+                    "endpoint": "https://qv2bt75efvadfjszeplb447lcq.appsync-api.sa-east-1.amazonaws.com/graphql",
+                    "region": "sa-east-1",
+                    "authorizationType": "API_KEY",
+                    "apiKey": "da2-zjqguf3glrcftjrjl6glhdd3ci"
+                }
+            }
+        }
+    },
+    "auth": {
+        "plugins": {
+            "awsCognitoAuthPlugin": {
+                "UserAgent": "aws-amplify/cli",
+                "Version": "0.1.0",
+                "IdentityManager": {
+                    "Default": {}
+                },
+                "AppSync": {
+                    "Default": {
+                        "ApiUrl": "https://qv2bt75efvadfjszeplb447lcq.appsync-api.sa-east-1.amazonaws.com/graphql",
+                        "Region": "sa-east-1",
+                        "AuthMode": "API_KEY",
+                        "ApiKey": "da2-zjqguf3glrcftjrjl6glhdd3ci",
+                        "ClientDatabasePrefix": "amplifycoworkingapp_API_KEY"
+                    },
+                    "amplifycoworkingapp_AWS_IAM": {
+                        "ApiUrl": "https://qv2bt75efvadfjszeplb447lcq.appsync-api.sa-east-1.amazonaws.com/graphql",
+                        "Region": "sa-east-1",
+                        "AuthMode": "AWS_IAM",
+                        "ClientDatabasePrefix": "amplifycoworkingapp_AWS_IAM"
+                    }
+                },
+                "CredentialsProvider": {
+                    "CognitoIdentity": {
+                        "Default": {
+                            "PoolId": "sa-east-1:3553cb2c-c605-46dc-99f0-68e5d981fac0",
+                            "Region": "sa-east-1"
+                        }
+                    }
+                },
+                "CognitoUserPool": {
+                    "Default": {
+                        "PoolId": "sa-east-1_W5eBSujGC",
+                        "AppClientId": "5enmk9t153puvlf0u25dnfoqju",
+                        "Region": "sa-east-1"
+                    }
+                },
+                "Auth": {
+                    "Default": {
+                        "OAuth": {
+                            "WebDomain": "fkohwub4tbla-staging.auth.sa-east-1.amazoncognito.com",
+                            "AppClientId": "5enmk9t153puvlf0u25dnfoqju",
+                            "SignInRedirectURI": "coworking://",
+                            "SignOutRedirectURI": "coworking://",
+                            "Scopes": [
+                                "phone",
+                                "email",
+                                "openid",
+                                "profile",
+                                "aws.cognito.signin.user.admin"
+                            ]
+                        },
+                        "authenticationFlowType": "USER_SRP_AUTH",
+                        "mfaConfiguration": "OFF",
+                        "mfaTypes": [
+                            "SMS"
+                        ],
+                        "passwordProtectionSettings": {
+                            "passwordPolicyMinLength": 8,
+                            "passwordPolicyCharacters": [
+                                "REQUIRES_LOWERCASE",
+                                "REQUIRES_NUMBERS",
+                                "REQUIRES_UPPERCASE"
+                            ]
+                        },
+                        "signupAttributes": [],
+                        "socialProviders": [
+                            "GOOGLE"
+                        ],
+                        "usernameAttributes": [
+                            "EMAIL"
+                        ],
+                        "verificationMechanisms": [
+                            "EMAIL"
+                        ]
+                    }
+                },
+                "S3TransferUtility": {
+                    "Default": {
+                        "Bucket": "amplifycoworkingappb1e516e5e7f54784b0eff05a3d518a9eb-staging",
+                        "Region": "sa-east-1"
+                    }
+                }
+            }
+        }
+    },
+    "storage": {
+        "plugins": {
+            "awsS3StoragePlugin": {
+                "bucket": "amplifycoworkingappb1e516e5e7f54784b0eff05a3d518a9eb-staging",
+                "region": "sa-east-1",
+                "defaultAccessLevel": "guest"
+            }
+        }
+    }
+}

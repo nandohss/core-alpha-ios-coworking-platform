@@ -102,7 +102,7 @@ struct AllMySpacesView: View {
                     set: { if !$0 { navigateToExistingSpaceId = nil } }
                 )) {
                     if let id = navigateToExistingSpaceId {
-                        CoHosterSpaceManagementView(spaceId: id)
+                        CoHosterSpaceManagementView(viewModel: makeSpaceManagementViewModel(spaceId: id, authTokenProvider: { UserDefaults.standard.string(forKey: "authToken") }))
                     } else {
                         EmptyView()
                     }
@@ -231,7 +231,9 @@ private struct SpacesList: View {
     var body: some View {
         List {
             ForEach(data, id: \.spaceId) { space in
-                NavigationLink(destination: CoHosterSpaceManagementView(spaceId: space.spaceId)) {
+                NavigationLink(destination: {
+                    CoHosterSpaceManagementView(viewModel: makeSpaceManagementViewModel(spaceId: space.spaceId, authTokenProvider: { UserDefaults.standard.string(forKey: "authToken") }))
+                }) {
                     SpaceRow(space: space)
                 }
                 .swipeActions(edge: .trailing) {
