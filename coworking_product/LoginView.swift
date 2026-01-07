@@ -159,6 +159,7 @@ struct LoginView: View {
                 )
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    TokenManager.shared.refreshToken()
                     isLoading = false
                     isLoggedIn = true
                 }

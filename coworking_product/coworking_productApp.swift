@@ -33,6 +33,9 @@ struct coworking_productApp: App {
         verificarHosterAoIniciar()
         
         syncProfileCompletionFromDefaults()
+
+        // Garante token atualizado ao abrir
+        TokenManager.shared.refreshToken()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             print("✅ Pronto para login")

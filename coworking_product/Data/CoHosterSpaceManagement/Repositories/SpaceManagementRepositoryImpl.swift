@@ -176,16 +176,31 @@ final class SpaceManagementRepositoryImpl: SpaceManagementRepository {
         weekdays: Set<Int>,
         minDurationMinutes: Int,
         bufferMinutes: Int,
-        autoApprove: Bool
+        autoApprove: Bool,
+        rules: String,
+        startTime: String?,
+        endTime: String?
     ) async throws {
-        // New aggregated route: PUT /spaces/full (payload contém o id)
-        var request = URLRequest(url: baseURL.appendingPathComponent("spaces/full"))
-        print("➡️ SaveAll PUT URL:", request.url?.absoluteString ?? "nil")
+        // Safe URL construction
+        let fullURL = baseURL.appendingPathComponent("spaces").appendingPathComponent("full")
+        var request = URLRequest(url: fullURL)
+        
+        // Detailed Logging
+        print("➡️ SaveAll PUT URL:", fullURL.absoluteString)
+        
         request.httpMethod = "PUT"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = authTokenProvider() {
+        
+        let token = authTokenProvider()
+        if let token = token {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            print("🔑 Auth Token Present: YES")
+        } else {
+            print("⚠️ Auth Token Present: NO (Provider returned nil)")
         }
+        
+        print("📦 Headers:", request.allHTTPHeaderFields ?? [:])
+        
         let payload = SpaceAggregatedUpdateDTO(
             id: space.id,
             title: space.title,
@@ -197,11 +212,29 @@ final class SpaceManagementRepositoryImpl: SpaceManagementRepository {
             facilityIDs: facilityIDs,
             weekdays: Array(weekdays),
             minDurationMinutes: minDurationMinutes,
-            bufferMinutes: bufferMinutes
+            bufferMinutes: bufferMinutes,
+            regras: rules,
+            horaInicio: startTime,
+            horaFim: endTime
         )
-        request.httpBody = try JSONEncoder().encode(payload)
-        let (_, response) = try await session.data(for: request)
-        try ensureSuccess(response: response, data: nil)
+        
+        let bodyData = try JSONEncoder().encode(payload)
+        request.httpBody = bodyData
+        print("📦 Body Size: \(bodyData.count) bytes")
+        
+        let (data, response) = try await session.data(for: request)
+        
+        if let http = response as? HTTPURLResponse {
+            print("🌐 Response Status:", http.statusCode)
+            // print("🌐 Response Headers:", http.allHeaderFields) // Opcional, para reduzir ruído
+        }
+        
+        // Log do corpo de erro se houver
+        if !data.isEmpty {
+             print("❌ Server Response Body:", String(data: data, encoding: .utf8) ?? "Unable to decode")
+        }
+        
+        try ensureSuccess(response: response, data: data)
     }
 
     private func ensureSuccess(response: URLResponse, data: Data?) throws {

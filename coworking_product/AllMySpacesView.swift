@@ -280,7 +280,7 @@ private struct SpaceRow: View {
 private struct AvailabilityPill: View {
     let isAvailable: Bool
     var body: some View {
-        Text(isAvailable ? "Disponível" : "Ocupado")
+        Text(isAvailable ? "Disponível" : "Desativado")
             .font(.caption2).bold()
             .foregroundColor(isAvailable ? Color(red: 0, green: 0.6, blue: 0.2) : .gray)
             .padding(.horizontal, 8)

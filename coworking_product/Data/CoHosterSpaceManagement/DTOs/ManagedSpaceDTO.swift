@@ -12,6 +12,9 @@ struct ManagedSpaceDTO: Codable, Identifiable, Equatable {
     let isEnabled: Bool
     let diasSemana: [String]?
     let amenities: [String]?
+    let regras: String?
+    let horaInicio: String?
+    let horaFim: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "spaceId"
@@ -22,6 +25,9 @@ struct ManagedSpaceDTO: Codable, Identifiable, Equatable {
         case isEnabled = "availability"
         case diasSemana = "diasSemana"
         case amenities = "amenities"
+        case regras
+        case horaInicio
+        case horaFim
     }
 }
 
@@ -37,5 +43,8 @@ struct SpaceAggregatedUpdateDTO: Codable {
     let weekdays: [Int]
     let minDurationMinutes: Int
     let bufferMinutes: Int
+    let regras: String?
+    let horaInicio: String?
+    let horaFim: String?
 }
 

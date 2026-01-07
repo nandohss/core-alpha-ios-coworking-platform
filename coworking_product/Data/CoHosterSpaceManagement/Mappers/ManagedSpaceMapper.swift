@@ -15,6 +15,9 @@ extension ManagedSpaceDTO {
         let labels = domain.weekdays.compactMap { reverseMap[$0] }
         self.diasSemana = labels
         self.amenities = domain.amenities
+        self.regras = domain.rules
+        self.horaInicio = domain.startTime
+        self.horaFim = domain.endTime
     }
 }
 

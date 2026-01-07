@@ -12,8 +12,11 @@ public struct ManagedSpace: Identifiable, Equatable, Hashable {
     public var isEnabled: Bool
     public var weekdays: [Int]
     public var amenities: [String]
+    public var rules: String
+    public var startTime: String?
+    public var endTime: String?
     
-    public init(id: String, title: String, capacity: Int, pricePerHour: Double, description: String, isEnabled: Bool, weekdays: [Int] = [], amenities: [String] = []) {
+    public init(id: String, title: String, capacity: Int, pricePerHour: Double, description: String, isEnabled: Bool, weekdays: [Int] = [], amenities: [String] = [], rules: String = "", startTime: String? = nil, endTime: String? = nil) {
         self.id = id
         self.title = title
         self.capacity = capacity
@@ -22,6 +25,9 @@ public struct ManagedSpace: Identifiable, Equatable, Hashable {
         self.isEnabled = isEnabled
         self.weekdays = weekdays
         self.amenities = amenities
+        self.rules = rules
+        self.startTime = startTime
+        self.endTime = endTime
     }
 }
 extension ManagedSpace {
@@ -52,7 +58,10 @@ extension ManagedSpace {
             description: dto.description,
             isEnabled: dto.isEnabled,
             weekdays: weekdaysInts,
-            amenities: dto.amenities ?? []
+            amenities: dto.amenities ?? [],
+            rules: dto.regras ?? "",
+            startTime: dto.horaInicio,
+            endTime: dto.horaFim
         )
     }
 }

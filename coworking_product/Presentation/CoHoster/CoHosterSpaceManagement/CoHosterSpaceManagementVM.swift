@@ -16,6 +16,10 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
     @Published var descriptionText: String = ""
     @Published var isEnabledForBookings: Bool = true
     @Published var autoApproveBookings: Bool = false
+    @Published var rules: String = ""
+    @Published var startTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())!
+    @Published var endTime: Date = Calendar.current.date(bySettingHour: 18, minute: 0, second: 0, of: Date())!
+    @Published var isFullDay: Bool = false
 
     @Published var photoURLs: [URL] = []
     @Published var categories: [FacilityCategory] = []
@@ -79,6 +83,23 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
             self.pricePerHourBRL = Self.brlString(from: space.pricePerHour)
             self.descriptionText = space.description
             self.isEnabledForBookings = space.isEnabled
+            self.rules = space.rules
+            
+            // Format time strings (HH:mm) to Date
+            if let start = space.startTime, !start.isEmpty {
+                self.startTime = Self.date(from: start) ?? self.startTime
+            }
+            if let end = space.endTime, !end.isEmpty {
+                self.endTime = Self.date(from: end) ?? self.endTime
+            }
+            
+            // Logic for "Full Day": checked if both are "00:00" and "23:59"
+            if space.startTime == "00:00" && space.endTime == "23:59" {
+                 self.isFullDay = true
+            } else {
+                 self.isFullDay = false
+            }
+            
             self.selectedWeekdays = Set(space.weekdays)
             // Carregar facilities
             let facilities = try await fetchFacilitiesUseCase.execute()
@@ -148,7 +169,10 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
                 weekdays: selectedWeekdays,
                 minDurationMinutes: minDurationMinutes,
                 bufferMinutes: bufferMinutes,
-                autoApprove: autoApproveBookings
+                autoApprove: autoApproveBookings,
+                rules: rules,
+                startTime: isFullDay ? "00:00" : Self.string(from: startTime),
+                endTime: isFullDay ? "23:59" : Self.string(from: endTime)
             )
             self.successMessage = "Alterações salvas com sucesso."
         } catch {
@@ -203,6 +227,18 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
         // Fallback for simple parsing if formatter fails (e.g. user typed "10.50" instead of "10,50")
         let standard = cleaned.replacingOccurrences(of: ",", with: ".")
         return Double(standard) ?? 0.0
+    }
+
+    private static func date(from timeString: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.date(from: timeString)
+    }
+
+    private static func string(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
     }
 }
 

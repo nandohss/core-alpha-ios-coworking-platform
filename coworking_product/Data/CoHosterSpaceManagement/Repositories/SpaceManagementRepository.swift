@@ -19,6 +19,9 @@ protocol SpaceManagementRepository {
         weekdays: Set<Int>,
         minDurationMinutes: Int,
         bufferMinutes: Int,
-        autoApprove: Bool
+        autoApprove: Bool,
+        rules: String,
+        startTime: String?,
+        endTime: String?
     ) async throws
 }

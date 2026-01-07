@@ -12,7 +12,10 @@ struct RealSaveSpaceAllUseCase: SaveSpaceAllUseCase {
         weekdays: Set<Int>,
         minDurationMinutes: Int,
         bufferMinutes: Int,
-        autoApprove: Bool
+        autoApprove: Bool,
+        rules: String,
+        startTime: String?,
+        endTime: String?
     ) async throws {
         try await repository.saveAll(
             space: space,
@@ -20,7 +23,10 @@ struct RealSaveSpaceAllUseCase: SaveSpaceAllUseCase {
             weekdays: weekdays,
             minDurationMinutes: minDurationMinutes,
             bufferMinutes: bufferMinutes,
-            autoApprove: autoApprove
+            autoApprove: autoApprove,
+            rules: rules,
+            startTime: startTime,
+            endTime: endTime
         )
     }
 }

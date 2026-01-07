@@ -73,10 +73,29 @@ struct CoHosterSpaceManagementView: View {
 
     private var basicsSection: some View {
         Section(header: Text("Dados do espaço")) {
-            TextField("Título", text: $vm.title)
-                .focused($focusedField, equals: CoHosterSpaceManagementView.Field.title)
-            Stepper(value: $vm.capacity, in: 1...200) {
-                Text("Capacidade: \(vm.capacity)")
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Nome do espaço")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                TextField("Título", text: $vm.title)
+                    .focused($focusedField, equals: CoHosterSpaceManagementView.Field.title)
+            }
+            .padding(.vertical, 4)
+
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Capacidade")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("\(vm.capacity)")
+                        .font(.title3) // A bit larger for emphasis since it's on its own line
+                        .foregroundStyle(.primary)
+                        .fontWeight(.semibold)
+                }
+                Spacer()
+                Stepper("", value: $vm.capacity, in: 1...10000)
+                    .labelsHidden()
+                    .scaleEffect(1.2) // Make buttons larger
             }
             .onChange(of: vm.capacity) { _ in
                 let generator = UIImpactFeedbackGenerator(style: .light)
@@ -87,16 +106,22 @@ struct CoHosterSpaceManagementView: View {
                 PriceInputField(label: "Preço por hora", text: $vm.pricePerHourBRL, target: .priceHour, focus: $focusedField)
                 // Se quiser, inclua também preço por dia, se o ViewModel trouxer esse campo
             }
-            ZStack(alignment: .topLeading) {
-                if vm.descriptionText.isEmpty {
-                    Text("Escreva a descrição do espaço aqui...")
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 8)
-                        .padding(.leading, 5)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Descrição")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                ZStack(alignment: .topLeading) {
+                    if vm.descriptionText.isEmpty {
+                        Text("Escreva a descrição do espaço aqui...")
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 8)
+                            .padding(.leading, 5)
+                    }
+                    TextEditor(text: $vm.descriptionText)
+                        .focused($focusedField, equals: CoHosterSpaceManagementView.Field.description)
+                        .frame(minHeight: 80)
                 }
-                TextEditor(text: $vm.descriptionText)
-                    .focused($focusedField, equals: CoHosterSpaceManagementView.Field.description)
-                    .frame(minHeight: 80)
             }
         }
     }
@@ -117,339 +142,126 @@ struct CoHosterSpaceManagementView: View {
     private var availabilitySection: some View {
         Section(header: Text("Disponibilidade")) {
             WeekdaySelector(selected: $vm.selectedWeekdays)
+
+            Toggle("Habilitar dia inteiro", isOn: $vm.isFullDay)
+                .tint(.black)
+
+            if !vm.isFullDay {
+                HStack {
+                    Text("Horário de início")
+                    Spacer()
+                    DatePicker("", selection: $vm.startTime, displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                }
+                HStack {
+                    Text("Horário de fim")
+                    Spacer()
+                    DatePicker("", selection: $vm.endTime, displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                }
+            }
         }
     }
 
     private var rulesSection: some View {
         Section(header: Text("Regras de reserva")) {
-            HStack {
-                Stepper(value: $vm.minDurationMinutes, in: 30...480, step: 15) {
-                    Text("Duração mínima: \(vm.minDurationMinutes) min").font(.subheadline)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Duração mínima")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(formatDuration(vm.minDurationMinutes))
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .fontWeight(.semibold)
                 }
-            }
-            .scaleEffect(1.06)
-            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: vm.minDurationMinutes)
-            .onChange(of: vm.minDurationMinutes) { _ in
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.prepare()
-                generator.impactOccurred()
-            }
-            HStack {
-                Stepper(value: $vm.bufferMinutes, in: 0...240, step: 5) {
-                    Text("Intervalo entre reservas: \(vm.bufferMinutes) min").font(.subheadline)
-                }
-            }
-            .scaleEffect(1.06)
-            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: vm.bufferMinutes)
-            .onChange(of: vm.bufferMinutes) { _ in
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.prepare()
-                generator.impactOccurred()
-            }
-        }
-    }
-}
-
-// MARK: - Subviews utilitárias
-
-// MARK: - Subviews utilitárias
-
-// MARK: - Subviews utilitárias
-
-private struct PriceInputField: View {
-    let label: String
-    @Binding var text: String
-    let target: CoHosterSpaceManagementView.Field
-    var focus: FocusState<CoHosterSpaceManagementView.Field?>.Binding? = nil
-    
-    @State private var shouldOverwrite = false
-
-    private var decimalFormatter: NumberFormatter {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.locale = Locale(identifier: "pt_BR")
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 2
-        return formatter
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-            HStack(spacing: 4) {
-                Text("R$")
-                    .foregroundStyle(.primary)
-                    .font(.body)
-                
-                TextField("0,00", text: Binding(
-                    get: {
-                        let cleaned = text
-                            .replacingOccurrences(of: "R$", with: "")
-                            .replacingOccurrences(of: " ", with: "")
-                            .trimmingCharacters(in: .whitespaces)
-                        return cleaned.isEmpty ? "0,00" : cleaned
-                    },
-                    set: { newValue in
-                        let oldDigits = text.filter { "0123456789".contains($0) }
-                        let newDigits = newValue.filter { "0123456789".contains($0) }
-                        
-                        var finalDigits = newDigits
-                        
-                        if shouldOverwrite {
-                            // Find the new characters added
-                            if newDigits.count > oldDigits.count {
-                                // Simple heuristic: user typed a number, discard old state
-                                // We take the difference (new chars)
-                                var temp = newDigits
-                                for char in oldDigits {
-                                    if let index = temp.firstIndex(of: char) {
-                                        temp.remove(at: index)
-                                    }
-                                }
-                                if !temp.isEmpty {
-                                    finalDigits = temp
-                                }
-                            }
-                            shouldOverwrite = false
-                        }
-                        
-                        if let number = Double(finalDigits) {
-                            let value = number / 100.0
-                            let formatted = decimalFormatter.string(from: NSNumber(value: value)) ?? "0,00"
-                            text = "R$ \(formatted)"
-                        } else {
-                            text = ""
-                        }
-                    }
-                ))
-                .keyboardType(.numberPad)
-                .bindFocus(focus, target: target)
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 52)
-            .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color(.systemGray6))
-            )
-            // Properly bind focus
-            .onAppear {
-                // Ensure initialization
-            }
-        }
-        .padding(.vertical, 4)
-        // Handle focus changes manually since valid .focused() syntax for optional binding is tricky here
-        // Actually, we can just use the .focused(binding, equals: value) modifier if we forward it properly.
-        .onChange(of: focus?.wrappedValue) { newFocus in
-            if newFocus == target {
-                shouldOverwrite = true
-            }
-        }
-    }
-}
-
-// Extension to apply focus easily
-extension View {
-    func bindFocus(_ focus: FocusState<CoHosterSpaceManagementView.Field?>.Binding?, target: CoHosterSpaceManagementView.Field) -> some View {
-        if let focus = focus {
-            return AnyView(self.focused(focus, equals: target))
-        } else {
-            return AnyView(self)
-        }
-    }
-}
-
-
-private struct SelectableTag: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.body)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(isSelected ? Color.black : Color(.systemGray5))
+                Slider(
+                    value: Binding(
+                        get: { Double(vm.minDurationMinutes) },
+                        set: { vm.minDurationMinutes = Int($0) }
+                    ),
+                    in: 60...1440,
+                    step: 60
                 )
-                .foregroundColor(isSelected ? .white : .black)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct WeekdaySelector: View {
-    @Binding var selected: Set<Int>
-    private let weekdays: [(label: String, index: Int)] = [
-        ("Seg", 2), ("Ter", 3), ("Qua", 4), ("Qui", 5),
-        ("Sex", 6), ("Sáb", 7), ("Dom", 1)
-    ]
-    private let columns: [GridItem] = [
-        GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())
-    ]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Dias da semana")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            LazyVGrid(columns: columns, alignment: .center, spacing: 12) {
-                ForEach(weekdays, id: \.index) { day in
-                    let isOn = selected.contains(day.index)
-                    SelectableTag(title: day.label, isSelected: isOn) {
-                        if isOn {
-                            selected.remove(day.index)
-                        } else {
-                            selected.insert(day.index)
-                        }
-                    }
+                .tint(.black)
+                .onChange(of: vm.minDurationMinutes) { _ in
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.prepare()
+                    generator.impactOccurred()
                 }
             }
-        }
-        .padding(.vertical, 8)
-    }
-}
+            .padding(.vertical, 4)
 
-private struct ThumbnailView: View {
-    let url: URL
-    var body: some View {
-        AsyncImage(url: url) { phase in
-            switch phase {
-            case .empty: ProgressView()
-            case .success(let image): image.resizable().scaledToFill()
-            case .failure: Image(systemName: "photo").font(.title)
-            @unknown default: EmptyView()
-            }
-        }
-    }
-}
-
-private struct PickedItemThumbnail: View {
-    let item: PhotosPickerItem
-    @State private var image: Image? = nil
-
-    var body: some View {
-        ZStack {
-            if let image = image {
-                image.resizable().scaledToFill()
-            } else {
-                ProgressView()
-            }
-        }
-        .task(id: item) {
-            if let data = try? await item.loadTransferable(type: Data.self),
-               let ui = UIImage(data: data) {
-                image = Image(uiImage: ui)
-            }
-        }
-    }
-}
-
-// MARK: - Extracted Photos Section
-private struct PhotosSectionView: View {
-    @Binding var pickedItems: [PhotosPickerItem]
-    @Binding var photoURLs: [URL]
-    let isUploading: Bool
-    let onDelete: (URL) -> Void
-
-    var body: some View {
-        Section(header: Text("Fotos"), footer: Text("As fotos serão enviadas ao salvar.")) {
-            if isUploading {
-                ProgressView("Enviando fotos...")
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    // Fotos já enviadas
-                    ForEach(photoURLs, id: \.self) { url in
-                        ZStack(alignment: .topTrailing) {
-                            ThumbnailView(url: url)
-                                .frame(width: 120, height: 90)
-                                .clipped()
-                                .cornerRadius(8)
-
-                            Button(role: .destructive) {
-                                onDelete(url)
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .symbolRenderingMode(.palette)
-                                    .foregroundStyle(.white, .red)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Intervalo entre reservas")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(formatDuration(vm.bufferMinutes))
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .fontWeight(.semibold)
+                }
+                // Escala personalizada: 0, 15, 30, 60, 120, 180, ... 720
+                let bufferValues: [Int] = [0, 15, 30] + Array(stride(from: 60, through: 720, by: 60))
+                Slider(
+                    value: Binding(
+                        get: {
+                            // Encontrar o índice mais próximo do valor atual
+                            let val = vm.bufferMinutes
+                            if let idx = bufferValues.firstIndex(where: { $0 >= val }) {
+                                return Double(idx)
                             }
-                            .offset(x: 6, y: -6)
-                            .tint(.red)
+                            return Double(bufferValues.count - 1)
+                        },
+                        set: {
+                            // Definir o valor baseado no índice do slider
+                            let idx = Int($0)
+                            if idx >= 0 && idx < bufferValues.count {
+                                vm.bufferMinutes = bufferValues[idx]
+                            }
                         }
-                    }
-
-                    // Fotos recém-selecionadas
-                    ForEach(Array(pickedItems.enumerated()), id: \.offset) { _, item in
-                        PickedItemThumbnail(item: item)
-                            .frame(width: 120, height: 90)
-                            .clipped()
-                            .cornerRadius(8)
-                    }
+                    ),
+                    in: 0...Double(bufferValues.count - 1),
+                    step: 1
+                )
+                .tint(.black)
+                .onChange(of: vm.bufferMinutes) { _ in
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.prepare()
+                    generator.impactOccurred()
                 }
-                .padding(.vertical, 4)
             }
+            .padding(.vertical, 4)
 
-            PhotosPicker(selection: $pickedItems, maxSelectionCount: 6, matching: .images) {
-                Label("Adicionar fotos", systemImage: "plus")
-            }
-            .tint(.black)
-        }
-    }
-}
-
-private struct FacilitiesSectionView: View {
-    let categories: [FacilityCategory]
-    @Binding var selectedFacilities: Set<Facility>
-
-    private var allFacilities: [Facility] {
-        let catalog = categories.flatMap { $0.facilities }
-        if catalog.isEmpty {
-            // Fallback: se não há catálogo carregado, use as selecionadas como universo
-            return Array(selectedFacilities).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-        }
-        return catalog.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-
-    private let columns: [GridItem] = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
-
-    var body: some View {
-        Section(header: Text("Facilidades"), footer: EmptyView()) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Selecione as facilidades disponíveis no espaço")
+            // Rules Text
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Regras do espaço")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-
-                if allFacilities.isEmpty {
-                    Text("Nenhuma facilidade configurada.")
-                        .foregroundStyle(.secondary)
-                        .font(.subheadline)
-                } else {
-                    LazyVGrid(columns: columns, alignment: .center, spacing: 12) {
-                        ForEach(allFacilities, id: \.self) { facility in
-                            let isSelected = selectedFacilities.contains(facility)
-                            SelectableTag(title: facility.name, isSelected: isSelected) {
-                                if isSelected {
-                                    selectedFacilities.remove(facility)
-                                } else {
-                                    selectedFacilities.insert(facility)
-                                }
-                            }
-                        }
-                    }
-                }
+                
+                TextEditor(text: $vm.rules)
+                    .frame(minHeight: 80)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                    )
             }
-            .padding(.top, 4)
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 8)
     }
-}
-
+    
+    // Helper para formatar minutos em horas/minutos
+    private func formatDuration(_ minutes: Int) -> String {
+        if minutes == 0 { return "0 min" }
+        let h = minutes / 60
+        let m = minutes % 60
+        if h > 0 {
+            return m > 0 ? "\(h) h \(m) min" : "\(h) h"
+        } else {
+            return "\(m) min"
+        }
+    }
+    }

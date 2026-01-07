@@ -168,6 +168,9 @@ struct MySpacesView: View {
                     }
                     .padding(.vertical)
                 }
+                .refreshable {
+                    spacesVM.loadSpaces()
+                }
                 .tag(0)
 
                 // Aba 1: Reservas (CoHoster)
@@ -317,7 +320,7 @@ private struct SpaceGridCard: View {
     let space: SpaceDTO
 
     private var isAvailable: Bool { space.availability ?? true }
-    private var statusText: String { isAvailable ? "Disponível" : "Ocupado" }
+    private var statusText: String { isAvailable ? "Disponível" : "Desativado" }
     private var statusColor: Color { isAvailable ? Color(red: 0, green: 0.6, blue: 0.2) : .gray }
 
     var body: some View {

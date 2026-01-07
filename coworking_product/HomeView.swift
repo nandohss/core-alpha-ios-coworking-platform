@@ -62,6 +62,12 @@ class CoworkingViewModel: ObservableObject {
             coworkings = decoded
 
         } catch {
+            // Ignora erros de cancelamento (ex: refresh rápido)
+            let nsError = error as NSError
+            if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled {
+                return
+            }
+
             print("❌ Erro ao carregar ou decodificar coworkings:", error)
             errorMessage = "Erro ao carregar coworkings: \(error.localizedDescription)"
         }
@@ -197,22 +203,21 @@ struct HomeView: View {
                                 }
                             }
 
-                            Spacer().frame(height: 32)
+                            Spacer().frame(height: 100)
                         }
                     }
                     .padding(.horizontal)
                     .padding(.top, 12)
                     .padding(.bottom)
-                    .refreshable {
-                        await viewModel.fetchCoworkings()
-                    }
+                }
+                .refreshable {
+                    await viewModel.fetchCoworkings()
                 }
             }
             .task {
                 await viewModel.fetchCoworkings()
             }
-            .background(Color(.systemGray6))
-            .ignoresSafeArea(edges: .bottom)
+            .background(Color(.systemGray6).ignoresSafeArea())
         }
     }
 }
