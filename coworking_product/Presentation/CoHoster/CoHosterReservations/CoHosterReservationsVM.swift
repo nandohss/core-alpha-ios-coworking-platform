@@ -56,24 +56,49 @@ final class CoHosterReservationsVM: ObservableObject {
 
     private let formatter: ReservationFormatting
     private let fetchUseCase: any FetchCoHosterReservationsUseCase
+    let updateUseCase: any UpdateCoHosterReservationStatusUseCase // Made internal (removed private) to share with DetailVM
 
     init(
         formatter: ReservationFormatting = DefaultReservationFormatting(),
-        fetchUseCase: any FetchCoHosterReservationsUseCase = FetchCoHosterReservationsUseCaseImpl(repository: CoHosterReservationsRepositoryImpl())
+        fetchUseCase: any FetchCoHosterReservationsUseCase = FetchCoHosterReservationsUseCaseImpl(repository: CoHosterReservationsRepositoryImpl()),
+        updateUseCase: any UpdateCoHosterReservationStatusUseCase = UpdateCoHosterReservationStatusUseCaseImpl(repository: CoHosterReservationsRepositoryImpl())
     ) {
         self.formatter = formatter
         self.fetchUseCase = fetchUseCase
+        self.updateUseCase = updateUseCase
     }
 
-    func load(hosterId: String, status: CoHosterReservationStatus? = nil, search: String = "") async {
+    func approve(reservation: CoHosterReservationViewData) async throws {
+        try await updateUseCase.execute(id: reservation.id, spaceId: reservation.spaceId, date: reservation.startDate, status: .confirmed)
+        // Refresh local state if needed, or rely on pull to refresh. 
+        // Better UX: update local list immediately.
+        updateLocalStatus(id: reservation.id, newStatus: .confirmed)
+    }
+
+    func reject(reservation: CoHosterReservationViewData) async throws {
+        try await updateUseCase.execute(id: reservation.id, spaceId: reservation.spaceId, date: reservation.startDate, status: .refused)
+        updateLocalStatus(id: reservation.id, newStatus: .refused)
+    }
+    
+    private func updateLocalStatus(id: String, newStatus: CoHosterReservationStatus) {
+       // Deep update in sections is complex because structs.
+       // Easiest is to reload. Or find and replace.
+       // Let's reload to be safe and consistent with backend.
+       Task {
+           let coHosterId = UserDefaults.standard.string(forKey: "userId") ?? ""
+           await load(hosterId: coHosterId, showLoading: false)
+       }
+    }
+
+    func load(hosterId: String, status: CoHosterReservationStatus? = nil, search: String = "", showLoading: Bool = true) async {
         let trimmedId = hosterId.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedId.isEmpty else {
             self.errorMessage = "ID do hoster ausente. Faça login novamente."
             self.sections = []
             return
         }
-        isLoading = true
-        defer { isLoading = false }
+        if showLoading { isLoading = true }
+        defer { if showLoading { isLoading = false } }
         do {
             let list = try await fetchUseCase.execute(hosterId: trimmedId, status: status)
             let mapped = mapToSections(list: list, search: search)
@@ -106,10 +131,11 @@ final class CoHosterReservationsVM: ObservableObject {
                 let guest = item.userName ?? item.userEmail ?? item.userId
                 let detail = CoHosterReservationViewData(
                     id: item.id,
+                    spaceId: item.spaceId,
                     code: item.id,
                     spaceName: name,
                     roomLabel: nil,
-                    capacity: 0,
+                    capacity: item.capacity ?? 0,
                     startDate: item.start,
                     endDate: item.end,
                     createdAt: item.start,

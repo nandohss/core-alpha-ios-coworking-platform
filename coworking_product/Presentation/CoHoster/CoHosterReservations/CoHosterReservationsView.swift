@@ -66,10 +66,15 @@ struct CoHosterReservationsView: View {
                             ForEach(section.items) { r in
                                 NavigationLink {
                                     CoHosterReservationDetailView(
-                                        reservation: r.detail,
-                                        approveAction: { _ in },
-                                        rejectAction: { _ in },
-                                        cancelAction: { _ in }
+                                        viewModel: CoHosterReservationDetailVM(
+                                            reservation: r.detail,
+                                            updateUseCase: viewModel.updateUseCase,
+                                            onSuccess: {
+                                                // Reload list on return/success
+                                                let coHosterId = UserDefaults.standard.string(forKey: "userId") ?? ""
+                                                await viewModel.load(hosterId: coHosterId, status: statusFilter, search: searchText, showLoading: false)
+                                            }
+                                        )
                                     )
                                 } label: {
                                     ReservationRow(
@@ -98,6 +103,10 @@ struct CoHosterReservationsView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .refreshable {
+                let coHosterId = UserDefaults.standard.string(forKey: "userId") ?? ""
+                await viewModel.load(hosterId: coHosterId, status: statusFilter, search: searchText, showLoading: false)
+            }
             .overlay {
                 if viewModel.sections.isEmpty {
                     VStack(spacing: 10) {
@@ -134,9 +143,17 @@ struct CoHosterReservationsView: View {
                 .transition(.opacity)
             }
         }
-        .task {
+        .task(id: statusFilter) {
             let coHosterId = UserDefaults.standard.string(forKey: "userId") ?? ""
             await viewModel.load(hosterId: coHosterId, status: statusFilter, search: searchText)
+        }
+        .onChange(of: searchText) { newValue in
+            Task {
+                let coHosterId = UserDefaults.standard.string(forKey: "userId") ?? ""
+                // Debounce could be added here, but direct call for now
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s debounce
+                await viewModel.load(hosterId: coHosterId, status: statusFilter, search: newValue)
+            }
         }
         .alert("Erro", isPresented: .constant(viewModel.errorMessage != nil)) {
             Button("OK") { viewModel.errorMessage = nil }

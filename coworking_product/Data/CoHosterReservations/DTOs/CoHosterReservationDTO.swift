@@ -18,4 +18,5 @@ struct CoHosterReservationDTO: Decodable, Identifiable, Equatable, Hashable {
     let spaceName: String?
     let userName: String?
     let userEmail: String?
+    let capacity: Int?
 }

@@ -18,6 +18,7 @@ public struct CoHosterReservation: Equatable, Hashable, Identifiable {
     public let spaceName: String?
     public let userName: String?
     public let userEmail: String?
+    public let capacity: Int?
 }
 
 public enum CoHosterReservationStatus: Equatable, Hashable {

@@ -341,5 +341,34 @@ extension APIService {
             completion(.success(()))
         }.resume()
     }
+
+    // POST /reservations (com action=update_status para compatibilidade)
+    static func updateReservationStatus(spaceId: String, datetime: String, status: CoHosterReservationDTO.Status) async throws {
+        let base = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro")!
+        let url = base.appendingPathComponent("reservations") // Removed .appendingPathComponent("status")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST" // Changed from PATCH
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any] = [
+            "action": "update_status", // Routing flag
+            "spaceId": spaceId,
+            "datetime": datetime,
+            "status": status.rawValue
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw NSError(domain: "APIService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Resposta inválida"])
+        }
+        
+        guard (200...299).contains(http.statusCode) else {
+            let msg = String(data: data, encoding: .utf8) ?? "Erro \(http.statusCode)"
+            throw NSError(domain: "APIService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
+        }
+    }
 }
 

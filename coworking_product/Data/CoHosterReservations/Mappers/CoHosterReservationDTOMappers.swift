@@ -19,6 +19,7 @@ extension CoHosterReservation {
         self.spaceName = dto.spaceName
         self.userName = dto.userName
         self.userEmail = dto.userEmail
+        self.capacity = dto.capacity
     }
 }
 

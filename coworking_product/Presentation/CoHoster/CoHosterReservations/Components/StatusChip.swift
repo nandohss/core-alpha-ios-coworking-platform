@@ -32,16 +32,16 @@ struct StatusChip: View {
     private var fgColor: Color {
         switch status {
         case .confirmed: return greenPrimary
-        case .pending:   return .yellow
-        case .canceled:  return .red
+        case .pending:   return .orange
+        case .canceled:  return .gray
         case .refused:   return .red
         }
     }
     private var bgColor: Color {
         switch status {
         case .confirmed: return greenPrimary.opacity(0.12)
-        case .pending:   return grayPrimary.opacity(0.12)
-        case .canceled:  return Color.red.opacity(0.12)
+        case .pending:   return Color.orange.opacity(0.12)
+        case .canceled:  return Color.gray.opacity(0.12)
         case .refused:   return Color.red.opacity(0.12)
         }
     }
