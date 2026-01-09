@@ -8,6 +8,7 @@ public struct ManagedSpace: Identifiable, Equatable, Hashable {
     public var title: String
     public var capacity: Int
     public var pricePerHour: Double
+    public var pricePerDay: Double?
     public var description: String
     public var isEnabled: Bool
     public var weekdays: [Int]
@@ -15,12 +16,22 @@ public struct ManagedSpace: Identifiable, Equatable, Hashable {
     public var rules: String
     public var startTime: String?
     public var endTime: String?
+    public var minDurationMinutes: Int
+    public var bufferMinutes: Int
+
+    public var isFullDay: Bool
+    public var email: String?
+    public var ddd: String?
+    public var phoneNumber: String?
+    public var fullPhoneNumber: String?
+    public var companyName: String?
     
-    public init(id: String, title: String, capacity: Int, pricePerHour: Double, description: String, isEnabled: Bool, weekdays: [Int] = [], amenities: [String] = [], rules: String = "", startTime: String? = nil, endTime: String? = nil) {
+    public init(id: String, title: String, capacity: Int, pricePerHour: Double, pricePerDay: Double? = nil, description: String, isEnabled: Bool, weekdays: [Int] = [], amenities: [String] = [], rules: String = "", startTime: String? = nil, endTime: String? = nil, minDurationMinutes: Int = 60, bufferMinutes: Int = 15, isFullDay: Bool = false, email: String? = nil, ddd: String? = nil, phoneNumber: String? = nil, fullPhoneNumber: String? = nil, companyName: String? = nil) {
         self.id = id
         self.title = title
         self.capacity = capacity
         self.pricePerHour = pricePerHour
+        self.pricePerDay = pricePerDay
         self.description = description
         self.isEnabled = isEnabled
         self.weekdays = weekdays
@@ -28,6 +39,14 @@ public struct ManagedSpace: Identifiable, Equatable, Hashable {
         self.rules = rules
         self.startTime = startTime
         self.endTime = endTime
+        self.minDurationMinutes = minDurationMinutes
+        self.bufferMinutes = bufferMinutes
+        self.isFullDay = isFullDay
+        self.email = email
+        self.ddd = ddd
+        self.phoneNumber = phoneNumber
+        self.fullPhoneNumber = fullPhoneNumber
+        self.companyName = companyName
     }
 }
 extension ManagedSpace {
@@ -55,13 +74,22 @@ extension ManagedSpace {
             title: dto.title,
             capacity: dto.capacity,
             pricePerHour: dto.pricePerHour,
+            pricePerDay: dto.pricePerDay,
             description: dto.description,
             isEnabled: dto.isEnabled,
             weekdays: weekdaysInts,
             amenities: dto.amenities ?? [],
             rules: dto.regras ?? "",
             startTime: dto.horaInicio,
-            endTime: dto.horaFim
+            endTime: dto.horaFim,
+            minDurationMinutes: dto.minDurationMinutes ?? 60,
+            bufferMinutes: dto.bufferMinutes ?? 15,
+            isFullDay: dto.diaInteiro ?? false,
+            email: dto.email,
+            ddd: dto.ddd,
+            phoneNumber: dto.numeroTelefone,
+            fullPhoneNumber: dto.telefoneCompleto,
+            companyName: dto.razaoSocial
         )
     }
 }

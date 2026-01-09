@@ -55,9 +55,14 @@ final class CoHosterReservationsVM: ObservableObject {
     @Published var errorMessage: String? = nil
 
     private let formatter: ReservationFormatting
+    private let fetchUseCase: any FetchCoHosterReservationsUseCase
 
-    init(formatter: ReservationFormatting = DefaultReservationFormatting()) {
+    init(
+        formatter: ReservationFormatting = DefaultReservationFormatting(),
+        fetchUseCase: any FetchCoHosterReservationsUseCase = FetchCoHosterReservationsUseCaseImpl(repository: CoHosterReservationsRepositoryImpl())
+    ) {
         self.formatter = formatter
+        self.fetchUseCase = fetchUseCase
     }
 
     func load(hosterId: String, status: CoHosterReservationStatus? = nil, search: String = "") async {
@@ -70,7 +75,7 @@ final class CoHosterReservationsVM: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let list = try await FetchCoHosterReservationsUseCaseImpl().execute(hosterId: trimmedId, status: status)
+            let list = try await fetchUseCase.execute(hosterId: trimmedId, status: status)
             let mapped = mapToSections(list: list, search: search)
             self.sections = mapped
         } catch {

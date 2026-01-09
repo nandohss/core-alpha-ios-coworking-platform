@@ -44,21 +44,7 @@ final class SpaceManagementRepositoryImpl: SpaceManagementRepository {
         }
         do {
             let dto = try JSONDecoder().decode(ManagedSpaceDTO.self, from: data)
-            let rawDias = dto.diasSemana ?? []
-            let map: [String: Int] = [
-                "Dom": 1, "Seg": 2, "Ter": 3, "Qua": 4, "Qui": 5, "Sex": 6, "Sáb": 7, "Sab": 7
-            ]
-            let weekdayIndices = rawDias.compactMap { map[$0] }
-            return ManagedSpace(
-                id: dto.id,
-                title: dto.title,
-                capacity: dto.capacity,
-                pricePerHour: dto.pricePerHour,
-                description: dto.description,
-                isEnabled: dto.isEnabled,
-                weekdays: weekdayIndices,
-                amenities: dto.amenities ?? []
-            )
+            return ManagedSpace(dto: dto)
         } catch let DecodingError.keyNotFound(key, context) {
             print("❌ DecodingError.keyNotFound:", key.stringValue, "path:", context.codingPath.map { $0.stringValue }.joined(separator: "."))
             print("   debugDescription:", context.debugDescription)
@@ -172,6 +158,7 @@ final class SpaceManagementRepositoryImpl: SpaceManagementRepository {
 
     func saveAll(
         space: ManagedSpace,
+        pricePerDay: Double?,
         facilityIDs: [String],
         weekdays: Set<Int>,
         minDurationMinutes: Int,
@@ -179,7 +166,12 @@ final class SpaceManagementRepositoryImpl: SpaceManagementRepository {
         autoApprove: Bool,
         rules: String,
         startTime: String?,
-        endTime: String?
+        endTime: String?,
+        isFullDay: Bool,
+        email: String?,
+        ddd: String?,
+        phoneNumber: String?,
+        companyName: String?
     ) async throws {
         // Safe URL construction
         let fullURL = baseURL.appendingPathComponent("spaces").appendingPathComponent("full")
@@ -206,6 +198,7 @@ final class SpaceManagementRepositoryImpl: SpaceManagementRepository {
             title: space.title,
             capacity: space.capacity,
             pricePerHour: space.pricePerHour,
+            pricePerDay: pricePerDay,
             description: space.description,
             isEnabled: space.isEnabled,
             autoApprove: autoApprove,
@@ -215,7 +208,13 @@ final class SpaceManagementRepositoryImpl: SpaceManagementRepository {
             bufferMinutes: bufferMinutes,
             regras: rules,
             horaInicio: startTime,
-            horaFim: endTime
+            horaFim: endTime,
+            isFullDay: isFullDay,
+            email: email,
+            ddd: ddd,
+            numeroTelefone: phoneNumber,
+            telefoneCompleto: nil, // TODO: Formatter logic if needed, or derived from ddd+phone
+            razaoSocial: companyName
         )
         
         let bodyData = try JSONEncoder().encode(payload)

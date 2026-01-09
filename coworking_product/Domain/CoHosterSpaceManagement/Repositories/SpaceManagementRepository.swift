@@ -1,9 +1,9 @@
-// Data/CoHosterSpaceManagement/Repositories/SpaceManagementRepository.swift
+// Domain/CoHosterSpaceManagement/Repositories/SpaceManagementRepository.swift
 // Protocolo do repositório para gerenciamento de espaços
 
 import Foundation
 
-protocol SpaceManagementRepository {
+public protocol SpaceManagementRepository {
     func fetchSpace(spaceId: String) async throws -> ManagedSpace
     func saveSpace(_ space: ManagedSpace) async throws
     func uploadPhoto(data: Data, filename: String, spaceId: String) async throws -> URL
@@ -15,6 +15,7 @@ protocol SpaceManagementRepository {
     func fetchFacilities() async throws -> [Facility]
     func saveAll(
         space: ManagedSpace,
+        pricePerDay: Double?,
         facilityIDs: [String],
         weekdays: Set<Int>,
         minDurationMinutes: Int,
@@ -22,6 +23,11 @@ protocol SpaceManagementRepository {
         autoApprove: Bool,
         rules: String,
         startTime: String?,
-        endTime: String?
+        endTime: String?,
+        isFullDay: Bool,
+        email: String?,
+        ddd: String?,
+        phoneNumber: String?,
+        companyName: String?
     ) async throws
 }

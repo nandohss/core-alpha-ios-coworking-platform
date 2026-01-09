@@ -13,13 +13,21 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
     @Published var title: String = ""
     @Published var capacity: Int = 1
     @Published var pricePerHourBRL: String = ""
+    @Published var pricePerDayBRL: String = ""
     @Published var descriptionText: String = ""
     @Published var isEnabledForBookings: Bool = true
     @Published var autoApproveBookings: Bool = false
     @Published var rules: String = ""
     @Published var startTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date())!
     @Published var endTime: Date = Calendar.current.date(bySettingHour: 18, minute: 0, second: 0, of: Date())!
+
     @Published var isFullDay: Bool = false
+    
+    // Contact Section
+    @Published var email: String = ""
+    @Published var ddd: String = ""
+    @Published var phoneNumber: String = ""
+    @Published var companyName: String = ""
 
     @Published var photoURLs: [URL] = []
     @Published var categories: [FacilityCategory] = []
@@ -81,6 +89,11 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
             self.title = space.title
             self.capacity = space.capacity
             self.pricePerHourBRL = Self.brlString(from: space.pricePerHour)
+            if let dayPrice = space.pricePerDay {
+                self.pricePerDayBRL = Self.brlString(from: dayPrice)
+            } else {
+                self.pricePerDayBRL = "" 
+            }
             self.descriptionText = space.description
             self.isEnabledForBookings = space.isEnabled
             self.rules = space.rules
@@ -93,14 +106,18 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
                 self.endTime = Self.date(from: end) ?? self.endTime
             }
             
-            // Logic for "Full Day": checked if both are "00:00" and "23:59"
-            if space.startTime == "00:00" && space.endTime == "23:59" {
-                 self.isFullDay = true
-            } else {
-                 self.isFullDay = false
-            }
+            // Direct assignment from domain
+            self.isFullDay = space.isFullDay
+            
+            // Populating Contact Fields
+            self.email = space.email ?? ""
+            self.ddd = space.ddd ?? ""
+            self.phoneNumber = space.phoneNumber ?? ""
+            self.companyName = space.companyName ?? ""
             
             self.selectedWeekdays = Set(space.weekdays)
+            self.minDurationMinutes = space.minDurationMinutes
+            self.bufferMinutes = space.bufferMinutes
             // Carregar facilities
             let facilities = try await fetchFacilitiesUseCase.execute()
             // Preencher categorias com uma categoria padrão usando as facilities retornadas
@@ -158,21 +175,30 @@ final class CoHosterSpaceManagementViewModel: ObservableObject {
             title: title,
             capacity: capacity,
             pricePerHour: pricePerHour,
+            pricePerDay: Self.brlToDouble(pricePerDayBRL),
             description: descriptionText,
-            isEnabled: isEnabledForBookings
+            isEnabled: isEnabledForBookings,
+            isFullDay: isFullDay
         )
         do {
             let facilityIDs = selectedFacilities.map { $0.id }
             try await saveSpaceAllUseCase.execute(
                 space: updatedSpace,
+                pricePerDay: Self.brlToDouble(pricePerDayBRL),
                 facilityIDs: facilityIDs,
                 weekdays: selectedWeekdays,
                 minDurationMinutes: minDurationMinutes,
                 bufferMinutes: bufferMinutes,
                 autoApprove: autoApproveBookings,
                 rules: rules,
+
                 startTime: isFullDay ? "00:00" : Self.string(from: startTime),
-                endTime: isFullDay ? "23:59" : Self.string(from: endTime)
+                endTime: isFullDay ? "23:59" : Self.string(from: endTime),
+                isFullDay: isFullDay,
+                email: email,
+                ddd: ddd,
+                phoneNumber: phoneNumber,
+                companyName: companyName
             )
             self.successMessage = "Alterações salvas com sucesso."
         } catch {

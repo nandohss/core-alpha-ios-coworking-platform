@@ -8,6 +8,7 @@ struct RealSaveSpaceAllUseCase: SaveSpaceAllUseCase {
 
     func execute(
         space: ManagedSpace,
+        pricePerDay: Double?,
         facilityIDs: [String],
         weekdays: Set<Int>,
         minDurationMinutes: Int,
@@ -15,10 +16,16 @@ struct RealSaveSpaceAllUseCase: SaveSpaceAllUseCase {
         autoApprove: Bool,
         rules: String,
         startTime: String?,
-        endTime: String?
+        endTime: String?,
+        isFullDay: Bool,
+        email: String?,
+        ddd: String?,
+        phoneNumber: String?,
+        companyName: String?
     ) async throws {
         try await repository.saveAll(
             space: space,
+            pricePerDay: pricePerDay,
             facilityIDs: facilityIDs,
             weekdays: weekdays,
             minDurationMinutes: minDurationMinutes,
@@ -26,7 +33,12 @@ struct RealSaveSpaceAllUseCase: SaveSpaceAllUseCase {
             autoApprove: autoApprove,
             rules: rules,
             startTime: startTime,
-            endTime: endTime
+            endTime: endTime,
+            isFullDay: isFullDay,
+            email: email,
+            ddd: ddd,
+            phoneNumber: phoneNumber,
+            companyName: companyName
         )
     }
 }

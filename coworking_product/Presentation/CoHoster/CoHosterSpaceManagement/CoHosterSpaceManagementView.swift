@@ -7,7 +7,8 @@ struct CoHosterSpaceManagementView: View {
     @FocusState private var focusedField: Field?
 
     enum Field: Hashable {
-        case title, priceHour, priceDay, description
+        case title, priceHour, priceDay, description, rules
+        case companyName, email, ddd, phone
     }
 
     // Injete o ViewModel já pronto (com os casos de uso) na inicialização
@@ -32,6 +33,7 @@ struct CoHosterSpaceManagementView: View {
         Form {
             statusSection
             basicsSection
+            contactSection
             photosSection
             facilitiesSection
             availabilitySection
@@ -102,9 +104,18 @@ struct CoHosterSpaceManagementView: View {
                 generator.prepare()
                 generator.impactOccurred()
             }
+            Toggle(isOn: $vm.isFullDay) {
+                Text("Habilitar dia inteiro")
+                    .foregroundStyle(.secondary)
+            }
+            .tint(.black)
+            .padding(.vertical, 4)
+
             HStack(alignment: .top, spacing: 12) {
-                PriceInputField(label: "Preço por hora", text: $vm.pricePerHourBRL, target: .priceHour, focus: $focusedField)
-                // Se quiser, inclua também preço por dia, se o ViewModel trouxer esse campo
+                if !vm.isFullDay {
+                    PriceInputField(label: "Preço por hora", text: $vm.pricePerHourBRL, target: .priceHour, focus: $focusedField)
+                }
+                PriceInputField(label: "Preço por dia", text: $vm.pricePerDayBRL, target: .priceDay, focus: $focusedField)
             }
             VStack(alignment: .leading, spacing: 10) {
                 Text("Descrição")
@@ -115,14 +126,64 @@ struct CoHosterSpaceManagementView: View {
                     if vm.descriptionText.isEmpty {
                         Text("Escreva a descrição do espaço aqui...")
                             .foregroundStyle(.secondary)
-                            .padding(.top, 8)
-                            .padding(.leading, 5)
+                            .padding(.top, 12) // Adjusted for padding(8) in editor
+                            .padding(.leading, 8)
                     }
                     TextEditor(text: $vm.descriptionText)
+                        .scrollContentBackground(.hidden) // Needed for background to show
+                        .frame(minHeight: 100)
+                        .padding(8)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
                         .focused($focusedField, equals: CoHosterSpaceManagementView.Field.description)
-                        .frame(minHeight: 80)
                 }
             }
+        }
+    }
+
+    private var contactSection: some View {
+        Section(header: Text("Contato")) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Razão Social")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                TextField("Ex: Minha Empresa LTDA", text: $vm.companyName)
+                    .focused($focusedField, equals: .companyName)
+            }
+            .padding(.vertical, 4)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("E-mail")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                TextField("Ex: contato@exemplo.com", text: $vm.email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .focused($focusedField, equals: .email)
+            }
+            .padding(.vertical, 4)
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("DDD")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    TextField("11", text: $vm.ddd)
+                        .keyboardType(.numberPad)
+                        .frame(width: 50)
+                        .focused($focusedField, equals: .ddd)
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Telefone")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    TextField("99999-9999", text: $vm.phoneNumber)
+                        .keyboardType(.phonePad)
+                        .focused($focusedField, equals: .phone)
+                }
+            }
+            .padding(.vertical, 4)
         }
     }
 
@@ -140,101 +201,104 @@ struct CoHosterSpaceManagementView: View {
     }
 
     private var availabilitySection: some View {
-        Section(header: Text("Disponibilidade")) {
-            WeekdaySelector(selected: $vm.selectedWeekdays)
+            Section(header: Text("Disponibilidade")) {
+                WeekdaySelector(selected: $vm.selectedWeekdays)
 
-            Toggle("Habilitar dia inteiro", isOn: $vm.isFullDay)
-                .tint(.black)
 
-            if !vm.isFullDay {
-                HStack {
-                    Text("Horário de início")
-                    Spacer()
-                    DatePicker("", selection: $vm.startTime, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                }
-                HStack {
-                    Text("Horário de fim")
-                    Spacer()
-                    DatePicker("", selection: $vm.endTime, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
+
+                if !vm.isFullDay {
+                    HStack {
+                        Text("Horário de início")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        DatePicker("", selection: $vm.startTime, displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                    }
+                    HStack {
+                        Text("Horário de fim")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        DatePicker("", selection: $vm.endTime, displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                    }
                 }
             }
-        }
     }
 
     private var rulesSection: some View {
         Section(header: Text("Regras de reserva")) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Duração mínima")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text(formatDuration(vm.minDurationMinutes))
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
-                        .fontWeight(.semibold)
+            if !vm.isFullDay {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Duração mínima")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(formatDuration(vm.minDurationMinutes))
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                            .fontWeight(.semibold)
+                    }
+                    Slider(
+                        value: Binding(
+                            get: { Double(vm.minDurationMinutes) },
+                            set: { vm.minDurationMinutes = Int($0) }
+                        ),
+                        in: 60...1440,
+                        step: 60
+                    )
+                    .tint(.black)
+                    .onChange(of: vm.minDurationMinutes) { _ in
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.prepare()
+                        generator.impactOccurred()
+                    }
                 }
-                Slider(
-                    value: Binding(
-                        get: { Double(vm.minDurationMinutes) },
-                        set: { vm.minDurationMinutes = Int($0) }
-                    ),
-                    in: 60...1440,
-                    step: 60
-                )
-                .tint(.black)
-                .onChange(of: vm.minDurationMinutes) { _ in
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.prepare()
-                    generator.impactOccurred()
-                }
-            }
-            .padding(.vertical, 4)
+                .padding(.vertical, 4)
 
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Intervalo entre reservas")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text(formatDuration(vm.bufferMinutes))
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
-                        .fontWeight(.semibold)
-                }
-                // Escala personalizada: 0, 15, 30, 60, 120, 180, ... 720
-                let bufferValues: [Int] = [0, 15, 30] + Array(stride(from: 60, through: 720, by: 60))
-                Slider(
-                    value: Binding(
-                        get: {
-                            // Encontrar o índice mais próximo do valor atual
-                            let val = vm.bufferMinutes
-                            if let idx = bufferValues.firstIndex(where: { $0 >= val }) {
-                                return Double(idx)
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Intervalo entre reservas")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(formatDuration(vm.bufferMinutes))
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                            .fontWeight(.semibold)
+                    }
+                    // Escala personalizada: 0, 15, 30, 60, 120, 180, ... 720
+                    let bufferValues: [Int] = [0, 15, 30] + Array(stride(from: 60, through: 720, by: 60))
+                    Slider(
+                        value: Binding(
+                            get: {
+                                // Encontrar o índice mais próximo do valor atual
+                                let val = vm.bufferMinutes
+                                if let idx = bufferValues.firstIndex(where: { $0 >= val }) {
+                                    return Double(idx)
+                                }
+                                return Double(bufferValues.count - 1)
+                            },
+                            set: {
+                                // Definir o valor baseado no índice do slider
+                                let idx = Int($0)
+                                if idx >= 0 && idx < bufferValues.count {
+                                    vm.bufferMinutes = bufferValues[idx]
+                                }
                             }
-                            return Double(bufferValues.count - 1)
-                        },
-                        set: {
-                            // Definir o valor baseado no índice do slider
-                            let idx = Int($0)
-                            if idx >= 0 && idx < bufferValues.count {
-                                vm.bufferMinutes = bufferValues[idx]
-                            }
-                        }
-                    ),
-                    in: 0...Double(bufferValues.count - 1),
-                    step: 1
-                )
-                .tint(.black)
-                .onChange(of: vm.bufferMinutes) { _ in
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.prepare()
-                    generator.impactOccurred()
+                        ),
+                        in: 0...Double(bufferValues.count - 1),
+                        step: 1
+                    )
+                    .tint(.black)
+                    .onChange(of: vm.bufferMinutes) { _ in
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.prepare()
+                        generator.impactOccurred()
+                    }
                 }
+                .padding(.vertical, 4)
             }
-            .padding(.vertical, 4)
 
             // Rules Text
             VStack(alignment: .leading, spacing: 10) {
@@ -242,12 +306,21 @@ struct CoHosterSpaceManagementView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 
-                TextEditor(text: $vm.rules)
-                    .frame(minHeight: 80)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                    )
+                ZStack(alignment: .topLeading) {
+                    if vm.rules.isEmpty {
+                        Text("Escreva as regras do espaço aqui...")
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 12)
+                            .padding(.leading, 8)
+                    }
+                    TextEditor(text: $vm.rules)
+                        .scrollContentBackground(.hidden)
+                        .frame(minHeight: 100)
+                        .padding(8)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                        .focused($focusedField, equals: CoHosterSpaceManagementView.Field.rules)
+                }
             }
             .padding(.vertical, 4)
         }

@@ -9,6 +9,7 @@ extension ManagedSpaceDTO {
         self.title = domain.title
         self.capacity = domain.capacity
         self.pricePerHour = domain.pricePerHour
+        self.pricePerDay = domain.pricePerDay
         self.description = domain.description
         self.isEnabled = domain.isEnabled
         let reverseMap: [Int: String] = [1: "Seg", 2: "Ter", 3: "Qua", 4: "Qui", 5: "Sex", 6: "Sáb", 7: "Dom"]
@@ -18,6 +19,14 @@ extension ManagedSpaceDTO {
         self.regras = domain.rules
         self.horaInicio = domain.startTime
         self.horaFim = domain.endTime
+        self.minDurationMinutes = domain.minDurationMinutes
+        self.bufferMinutes = domain.bufferMinutes
+        self.diaInteiro = domain.isFullDay
+        self.email = domain.email
+        self.ddd = domain.ddd
+        self.numeroTelefone = domain.phoneNumber
+        self.telefoneCompleto = domain.fullPhoneNumber
+        self.razaoSocial = domain.companyName
     }
 }
 

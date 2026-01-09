@@ -13,6 +13,7 @@ import Foundation
 public protocol SaveSpaceAllUseCase {
     func execute(
         space: ManagedSpace,
+        pricePerDay: Double?,
         facilityIDs: [String],
         weekdays: Set<Int>,
         minDurationMinutes: Int,
@@ -20,7 +21,12 @@ public protocol SaveSpaceAllUseCase {
         autoApprove: Bool,
         rules: String,
         startTime: String?,
-        endTime: String?
+        endTime: String?,
+        isFullDay: Bool,
+        email: String?,
+        ddd: String?,
+        phoneNumber: String?,
+        companyName: String?
     ) async throws
 }
 
