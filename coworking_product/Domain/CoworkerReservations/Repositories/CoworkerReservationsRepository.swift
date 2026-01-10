@@ -9,4 +9,5 @@ public protocol CoworkerReservationsRepository {
     // Novas funções para criação e verificação
     func createReservation(request: CoworkerReservationRequest) async throws
     func checkAvailability(spaceId: String, date: String, hours: [String], hosterId: String) async throws -> [String]
+    func fetchSpaceReservations(hosterId: String, spaceId: String) async throws -> [CoworkerReservation]
 }

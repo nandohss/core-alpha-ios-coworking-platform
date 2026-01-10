@@ -53,12 +53,6 @@ public class CoworkerReservationsRepositoryImpl: CoworkerReservationsRepository 
         }
         return mapa
     }
-    // Estrutura para decodificar resposta da lista de reservas
-    private struct ReservationAvailabilityDTO: Decodable {
-        let status: String
-        let startDate: String
-    }
-
     public func createReservation(request: CoworkerReservationRequest) async throws {
         guard let url = URL(string: "\(baseURL.absoluteString)/reservations") else {
             throw URLError(.badURL)
@@ -90,7 +84,12 @@ public class CoworkerReservationsRepositoryImpl: CoworkerReservationsRepository 
         let dtos = try JSONDecoder().decode([CoworkingSpaceDTO].self, from: data)
         return dtos.map { CoworkingSpaceMapper.toDomain(dto: $0) }
     }
-    
+
+    private struct CheckAvailabilityResponseDTO: Decodable {
+        let available: Bool
+        let conflicts: [String]
+    }
+
     public func checkAvailability(spaceId: String, date: String, hours: [String], hosterId: String) async throws -> [String] {
         // GET /reservations?spaceId=...&date=...&hours=...&hosterId=...
         var components = URLComponents(string: "\(baseURL.absoluteString)/reservations")
@@ -121,31 +120,29 @@ public class CoworkerReservationsRepositoryImpl: CoworkerReservationsRepository 
             throw NSError(domain: "CoworkerRepository", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Erro \(httpResponse.statusCode): \(body)"])
         }
         
-        // Decode list of reservations
-        let dtos = try JSONDecoder().decode([ReservationAvailabilityDTO].self, from: data)
+        // Decode new availability format
+        let dto = try JSONDecoder().decode(CheckAvailabilityResponseDTO.self, from: data)
+        return dto.conflicts
+    }
+    public func fetchSpaceReservations(hosterId: String, spaceId: String) async throws -> [CoworkerReservation] {
+        // GET /reservations?hosterId=...
+        var components = URLComponents(string: "\(baseURL.absoluteString)/reservations")
+        components?.queryItems = [
+            URLQueryItem(name: "hosterId", value: hosterId)
+        ]
         
-        let formatter = ISO8601DateFormatter()
-        let checkFormatter = DateFormatter()
-        checkFormatter.dateFormat = "yyyy-MM-dd"
-        checkFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        guard let url = components?.url else { throw URLError(.badURL) }
         
-        var occupiedHours: [String] = []
+        let (data, response) = try await URLSession.shared.data(from: url)
         
-        for dto in dtos {
-            guard let bookingDate = formatter.date(from: dto.startDate) else { continue }
-            
-            // Check if reservation is for the requested date (ignoring time)
-            if checkFormatter.string(from: bookingDate) == date {
-                // Check status: Reserved if CONFIRMED or PENDING
-                let s = dto.status.uppercased()
-                if s == "CONFIRMED" || s == "PENDING" {
-                    // Extract hour
-                    let hour = Calendar.current.component(.hour, from: bookingDate)
-                    occupiedHours.append(String(hour))
-                }
-            }
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw URLError(.badServerResponse)
         }
         
-        return occupiedHours
+        let dtos = try JSONDecoder().decode([CoworkerReservationDTO].self, from: data)
+        let allReservations = dtos.map { $0.toDomain() }
+        
+        // Filter by spaceId locally
+        return allReservations.filter { $0.spaceId == spaceId }
     }
 }

@@ -11,6 +11,7 @@ class DateSelectionViewModel: ObservableObject {
     @Published var selectedDate: Date = Date()
     @Published var selectedHours: Set<Int> = []
     @Published var reservedHours: [Int] = []
+    @Published var blockedDates: Set<Date> = []
     @Published var isLoading: Bool = false
     
     // MARK: - Initialization
@@ -23,6 +24,17 @@ class DateSelectionViewModel: ObservableObject {
         
         // Initial validation
         self.validateAndAdjustDate()
+        
+        Task { await fetchBlockedDates() }
+    }
+    
+    // ...
+    
+    func update(space: CoworkingSpace) {
+        if self.space != space {
+            self.space = space
+            Task { await fetchBlockedDates() }
+        }
     }
     
     // MARK: - Computed Properties
@@ -57,12 +69,37 @@ class DateSelectionViewModel: ObservableObject {
     var isSelectionValid: Bool {
         totalHours > 0
     }
-    
-    // MARK: - Actions
-    
-    func update(space: CoworkingSpace) {
-        if self.space != space {
-            self.space = space
+
+    func fetchBlockedDates() async {
+        // Only relevant for Full Day spaces per requirement "quando a reserva de dia inteiro está habilitada"
+        guard isFullDay, let hosterId = space.hosterId else { return }
+        
+        do {
+            let reservations = try await checkAvailabilityUseCase.fetchReservations(
+                hosterId: hosterId,
+                spaceId: space.id
+            )
+            
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(secondsFromGMT: 0)
+            
+            var blocked: Set<Date> = []
+            
+            for res in reservations {
+                let status = res.status.uppercased()
+                if (status == "CONFIRMED" || status == "PENDING"),
+                   let date = formatter.date(from: res.dateReservation) {
+                    blocked.insert(date)
+                }
+            }
+            
+            await MainActor.run {
+                self.blockedDates = blocked
+                print("DEBUG: Blocked Dates for Calendar: \(blocked.count)")
+            }
+        } catch {
+            print("❌ Error fetching blocked dates: \(error.localizedDescription)")
         }
     }
     
@@ -83,6 +120,7 @@ class DateSelectionViewModel: ObservableObject {
     func fetchReservedHours() async {
         isLoading = true
         let allHours = availableHours.map { String($0) }
+        print("DEBUG: Checking availability for isFullDay=\(isFullDay) Date=\(selectedDate) Hours=\(allHours)")
         
         do {
             let reserved = try await checkAvailabilityUseCase.execute(
@@ -93,6 +131,7 @@ class DateSelectionViewModel: ObservableObject {
             )
             
             reservedHours = reserved.compactMap { Int($0) }
+            print("DEBUG: Reserved Hours: \(reservedHours)")
             
             // Auto-selection for Full Day
             if isFullDay {
@@ -104,16 +143,23 @@ class DateSelectionViewModel: ObservableObject {
         } catch {
             print("❌ Error fetching availability: \(error.localizedDescription)")
             reservedHours = []
+            // Retry auto-selection even on error (assume available?)
+             if isFullDay {
+                handleFullDayAutoSelection()
+            }
         }
         
         isLoading = false
     }
     
     private func handleFullDayAutoSelection() {
+        print("DEBUG: Running Auto Selection. Available: \(availableHours.count)")
         let valid = availableHours.filter {
             !reservedHours.contains($0) && !isHourPast($0)
         }
+        print("DEBUG: Valid Hours found: \(valid.count)")
         selectedHours = Set(valid)
+        print("DEBUG: Selected Hours Set: \(selectedHours.count)")
     }
 
     // MARK: - Helpers

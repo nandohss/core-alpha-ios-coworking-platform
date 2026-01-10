@@ -30,6 +30,7 @@ struct DateSelectionView: View {
                         viewModel.onDateChanged()
                     }
 
+                    
                     if !viewModel.isFullDay {
                         Text("Escolha os horários")
                             .font(.headline)
