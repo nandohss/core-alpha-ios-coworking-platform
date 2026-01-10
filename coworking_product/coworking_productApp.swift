@@ -70,39 +70,58 @@ struct coworking_productApp: App {
         }.resume()
     }
 
+    func checkSession() async {
+        do {
+            let session = try await Amplify.Auth.fetchAuthSession()
+            if !session.isSignedIn {
+                isLoggedIn = false
+                print("🔒 Sessão inválida ou expirada. Logout forçado.")
+            } else {
+                print("✅ Sessão válida confirmada.")
+            }
+        } catch {
+            print("❌ Erro ao validar sessão: \(error)")
+            isLoggedIn = false
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
-            if showSplash {
-                SplashScreenView {
-                    showSplash = false
-                }
-            } else {
-                if !hasLaunchedBefore {
-                    ContentView()
-                        .onAppear { hasLaunchedBefore = true }
+            Group {
+                if showSplash {
+                    SplashScreenView {
+                        showSplash = false
+                    }
                 } else {
-                    if isLoggedIn {
-                        AnyView(MainView())
-                            .onAppear { syncProfileCompletionFromDefaults() }
-                            .onChange(of: userId) { _ in syncProfileCompletionFromDefaults() }
-                            .onChange(of: isLoggedIn) { _ in syncProfileCompletionFromDefaults() }
-                            .fullScreenCover(
-                                isPresented: Binding(
-                                    get: { isLoggedIn && !userId.isEmpty && !UserDefaults.standard.bool(forKey: "didCompleteProfile_\(userId)") },
-                                    set: { _ in }
-                                )
-                            ) {
-                                CompleteUserProfileView(
+                    if !hasLaunchedBefore {
+                        ContentView()
+                    } else {
+                        if isLoggedIn {
+                            AnyView(MainView())
+                                .onAppear { syncProfileCompletionFromDefaults() }
+                                .onChange(of: userId) { _ in syncProfileCompletionFromDefaults() }
+                                .onChange(of: isLoggedIn) { _ in syncProfileCompletionFromDefaults() }
+                                .fullScreenCover(
                                     isPresented: Binding(
-                                        get: { !hasCompletedProfile },
+                                        get: { isLoggedIn && !userId.isEmpty && !UserDefaults.standard.bool(forKey: "didCompleteProfile_\(userId)") },
                                         set: { _ in }
                                     )
-                                )
-                            }
-                    } else {
-                        AnyView(LoginView())
+                                ) {
+                                    CompleteUserProfileView(
+                                        isPresented: Binding(
+                                            get: { !hasCompletedProfile },
+                                            set: { _ in }
+                                        )
+                                    )
+                                }
+                        } else {
+                            AnyView(LoginView())
+                        }
                     }
                 }
+            }
+            .task {
+                await checkSession()
             }
         }
     }

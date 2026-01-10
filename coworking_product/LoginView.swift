@@ -50,10 +50,14 @@ struct LoginView: View {
                         Task {
                             guard isAmplifyReady else { return }
 
-                            let session = try await Amplify.Auth.fetchAuthSession()
-                            if session.isSignedIn {
-                                _ = await Amplify.Auth.signOut()
-                                hasCompletedProfile = false
+                            do {
+                                let session = try await Amplify.Auth.fetchAuthSession()
+                                if session.isSignedIn {
+                                    _ = await Amplify.Auth.signOut()
+                                    hasCompletedProfile = false
+                                }
+                            } catch {
+                                print("⚠️ Erro ao verificar sessão (prosseguindo): \(error)")
                             }
 
                             loginComGoogle()
@@ -115,11 +119,14 @@ struct LoginView: View {
     }
 
     func loginComGoogle() {
-        guard
-            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-            let window = windowScene.windows.first
-        else {
-            print("❌ Janela principal não encontrada")
+        // Find the active window scene
+        let windowScene = UIApplication.shared.connectedScenes
+            .filter { $0.activationState == .foregroundActive }
+            .first as? UIWindowScene
+            ?? UIApplication.shared.connectedScenes.first as? UIWindowScene
+
+        guard let window = windowScene?.windows.first else {
+            print("❌ Janela principal não encontrada para apresentação do login")
             return
         }
 
@@ -148,9 +155,22 @@ struct LoginView: View {
                 let sub = attributes.first { $0.key.rawValue == "sub" }?.value ?? ""
 
                 userId = sub
-                let completed = UserDefaults.standard.bool(forKey: "didCompleteProfile_\(sub)")
-                hasCompletedProfile = completed
-
+                
+                // Verifica no backend se o usuário já tem perfil completo
+                let existeNoBackend = await verificarPerfilNoBackend(userId: sub)
+                
+                if existeNoBackend {
+                    print("✅ Perfil encontrado no backend. Atualizando estado local.")
+                    UserDefaults.standard.set(true, forKey: "didCompleteProfile_\(sub)")
+                    hasCompletedProfile = true
+                } else {
+                    print("⚠️ Perfil não encontrado ou incompleto no backend.")
+                    // Mantém local
+                    let completed = UserDefaults.standard.bool(forKey: "didCompleteProfile_\(sub)")
+                    hasCompletedProfile = completed
+                }
+                
+                // Sempre registra/atualiza dados básicos
                 registrarUsuarioNoBackend(
                     userId: sub,
                     email: email,
@@ -169,6 +189,23 @@ struct LoginView: View {
                 isLoading = false
             }
         }
+    }
+
+    func verificarPerfilNoBackend(userId: String) async -> Bool {
+        guard let url = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro/users/\(userId)") else { return false }
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                // Se retornou 200 e tem corpo JSON, assumimos que o perfil existe
+                 if let _ = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                     return true
+                 }
+            }
+        } catch {
+            print("⚠️ Falha ao verificar perfil remoto: \(error)")
+        }
+        return false
     }
 
     func registrarUsuarioNoBackend(
