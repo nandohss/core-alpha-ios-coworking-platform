@@ -24,11 +24,7 @@ struct ReservationRow: View {
                         .font(.headline)
                         .lineLimit(1)
                     Spacer()
-                    StatusChip(
-                        status: row.status,
-                        greenPrimary: greenPrimary,
-                        grayPrimary: grayPrimary
-                    )
+                    ReservationStatusBadge(status: row.status)
                 }
                 Text(row.rangeText)
                     .font(.subheadline)

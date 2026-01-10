@@ -3,7 +3,7 @@ import Foundation
 
 @MainActor
 final class CoHosterReservationDetailVM: ObservableObject {
-    @Published var reservation: CoHosterReservationViewData
+    @Published var reservations: [CoHosterReservationViewData]
     @Published var isProcessing: Bool = false
     @Published var showConfirmAlert: Bool = false
     @Published var pendingAction: PendingAction? = nil
@@ -11,6 +11,10 @@ final class CoHosterReservationDetailVM: ObservableObject {
     
     private let updateUseCase: any UpdateCoHosterReservationStatusUseCase
     private let onSuccess: () async -> Void
+
+    var primary: CoHosterReservationViewData {
+        reservations.first!
+    }
 
     enum PendingAction {
         case approve, reject, cancel
@@ -37,11 +41,11 @@ final class CoHosterReservationDetailVM: ObservableObject {
     }
 
     init(
-        reservation: CoHosterReservationViewData,
+        reservations: [CoHosterReservationViewData],
         updateUseCase: any UpdateCoHosterReservationStatusUseCase,
         onSuccess: @escaping () async -> Void
     ) {
-        self.reservation = reservation
+        self.reservations = reservations
         self.updateUseCase = updateUseCase
         self.onSuccess = onSuccess
     }
@@ -64,28 +68,29 @@ final class CoHosterReservationDetailVM: ObservableObject {
         do {
             switch action {
             case .approve:
-                try await updateUseCase.execute(
-                    id: reservation.id,
-                    spaceId: reservation.spaceId,
-                    date: reservation.startDate,
-                    status: .confirmed
-                )
+                for res in reservations {
+                    try await updateUseCase.execute(
+                        id: res.id,
+                        spaceId: res.spaceId,
+                        date: res.startDate,
+                        status: .confirmed
+                    )
+                }
             case .reject:
-                try await updateUseCase.execute(
-                    id: reservation.id,
-                    spaceId: reservation.spaceId,
-                    date: reservation.startDate,
-                    status: .refused
-                )
+                for res in reservations {
+                    try await updateUseCase.execute(
+                        id: res.id,
+                        spaceId: res.spaceId,
+                        date: res.startDate,
+                        status: .refused
+                    )
+                }
             case .cancel:
-                // Cancel not implemented in case yet but supported in theory
-                // Assuming cancel sets to Cancelled
-                // For now, only approve/reject were requested.
                 break
             }
             await onSuccess()
         } catch {
-            self.errorMessage = "Erro ao atualizar reserva: \(error.localizedDescription)"
+            self.errorMessage = "Erro ao atualizar reservas: \(error.localizedDescription)"
         }
     }
 }

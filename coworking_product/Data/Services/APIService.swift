@@ -162,37 +162,7 @@ class APIService {
         }
     }
 
-    // Reservas para Co-Hoster (Estratégia B: GET /reservations?coHosterId=...&status=...)
-    static func fetchCoHosterReservations(hosterId: String, status: CoHosterReservationDTO.Status? = nil) async throws -> [CoHosterReservationDTO] {
-        let base = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro")!
-        var components = URLComponents(url: base.appendingPathComponent("reservations"), resolvingAgainstBaseURL: false)!
-        var items: [URLQueryItem] = [URLQueryItem(name: "hosterId", value: hosterId)]
-        if let status { items.append(URLQueryItem(name: "status", value: status.rawValue)) }
-        components.queryItems = items
-        guard let url = components.url else {
-            throw NSError(domain: "APIService", code: -1, userInfo: [NSLocalizedDescriptionKey: "URL inválida"])
-        }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        // Adicione headers de autenticação se necessário
-        // request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw NSError(domain: "APIService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Resposta inválida"]) }
-
-        switch http.statusCode {
-        case 200:
-            return try JSONDecoder().decode([CoHosterReservationDTO].self, from: data)
-        case 404:
-            // Trate 404 como lista vazia se o backend usar 404 para "sem resultados"
-            return []
-        default:
-            let body = String(data: data, encoding: .utf8) ?? ""
-            throw NSError(domain: "APIService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Erro \(http.statusCode): \(body)"])
-        }
-    }
 }
 
 // MARK: - User Profile Models
@@ -342,33 +312,6 @@ extension APIService {
         }.resume()
     }
 
-    // POST /reservations (com action=update_status para compatibilidade)
-    static func updateReservationStatus(spaceId: String, datetime: String, status: CoHosterReservationDTO.Status) async throws {
-        let base = URL(string: "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro")!
-        let url = base.appendingPathComponent("reservations") // Removed .appendingPathComponent("status")
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST" // Changed from PATCH
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let body: [String: Any] = [
-            "action": "update_status", // Routing flag
-            "spaceId": spaceId,
-            "datetime": datetime,
-            "status": status.rawValue
-        ]
-        
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw NSError(domain: "APIService", code: -2, userInfo: [NSLocalizedDescriptionKey: "Resposta inválida"])
-        }
-        
-        guard (200...299).contains(http.statusCode) else {
-            let msg = String(data: data, encoding: .utf8) ?? "Erro \(http.statusCode)"
-            throw NSError(domain: "APIService", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
-        }
-    }
+
 }
 

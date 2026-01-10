@@ -1,3 +1,4 @@
+
 //
 //  ReservationSuccessView.swift
 //  coworking_product
@@ -53,7 +54,9 @@ struct ReservationSuccessView: View {
                 detailRow("Data", formattedDate)
                 detailRow("Horários", selectedHours.map { "\($0)h" }.joined(separator: ", "))
                 detailRow("Pagamento", paymentMethod)
-                detailRow("QR Code", "Gerado para apresentar no local")
+                if status == .confirmed {
+                    detailRow("QR Code", "Gerado para apresentar no local")
+                }
             }
             .padding()
             .background(Color.gray.opacity(0.1))
@@ -100,4 +103,3 @@ struct ReservationSuccessView: View {
         return formatter.string(from: selectedDate)
     }
 }
-

@@ -67,7 +67,7 @@ struct CoHosterReservationsView: View {
                                 NavigationLink {
                                     CoHosterReservationDetailView(
                                         viewModel: CoHosterReservationDetailVM(
-                                            reservation: r.detail,
+                                            reservations: r.details,
                                             updateUseCase: viewModel.updateUseCase,
                                             onSuccess: {
                                                 // Reload list on return/success

@@ -19,6 +19,12 @@ public struct CoHosterReservation: Equatable, Hashable, Identifiable {
     public let userName: String?
     public let userEmail: String?
     public let capacity: Int?
+    public let dateReservation: String?
+    public let totalValue: Double?
+    public let hourlyRate: Double?
+    public let dailyRate: Double?
+    public let isFullDay: Bool?
+    public let createdAt: Date?
 }
 
 public enum CoHosterReservationStatus: Equatable, Hashable {

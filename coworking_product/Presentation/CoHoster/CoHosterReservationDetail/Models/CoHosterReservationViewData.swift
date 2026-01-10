@@ -32,7 +32,9 @@ struct CoHosterReservationViewData: Identifiable, Hashable {
     let startDate: Date
     let endDate: Date
     let createdAt: Date
-    let total: Double
+    let total: Double // Current logic: this is hourlyRate * 1 (or item total)
+    let dailyRate: Double? // For full day calc
+    let isFullDay: Bool
     let status: Status
     let guestName: String
     let guestEmail: String

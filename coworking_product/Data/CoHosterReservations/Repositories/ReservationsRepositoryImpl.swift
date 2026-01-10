@@ -1,18 +1,50 @@
 import Foundation
 
 // MARK: - Repository Protocol for CoHoster Reservations (Data Layer)
-// MARK: - Default Implementation using APIService
+// MARK: - Implementation using URLSession directly (Removed APIService dependency)
 struct CoHosterReservationsRepositoryImpl: CoHosterReservationsRepository {
+    private let baseURL = "https://i6yfbb45xc.execute-api.sa-east-1.amazonaws.com/pro"
+
     func fetch(hosterId: String, status: CoHosterReservationStatus?) async throws -> [CoHosterReservation] {
-        let dtos = try await APIService.fetchCoHosterReservations(hosterId: hosterId, status: status.map { 
-            switch $0 {
-            case .pending: return .pending
-            case .confirmed: return .confirmed
-            case .canceled: return .canceled
-            case .refused: return .refused
+        var components = URLComponents(string: "\(baseURL)/reservations")
+        var items: [URLQueryItem] = [URLQueryItem(name: "hosterId", value: hosterId)]
+        
+        if let status = status {
+            let dtoStatus: CoHosterReservationDTO.Status
+            switch status {
+            case .pending: dtoStatus = .pending
+            case .confirmed: dtoStatus = .confirmed
+            case .canceled: dtoStatus = .canceled
+            case .refused: dtoStatus = .refused
             }
-        })
-        return dtos.map { CoHosterReservation(dto: $0) }
+            items.append(URLQueryItem(name: "status", value: dtoStatus.rawValue))
+        }
+        
+        components?.queryItems = items
+        
+        guard let url = components?.url else {
+            throw NSError(domain: "CoHosterRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "URL inválida"])
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let http = response as? HTTPURLResponse else {
+            throw NSError(domain: "CoHosterRepository", code: -2, userInfo: [NSLocalizedDescriptionKey: "Resposta inválida"])
+        }
+
+        switch http.statusCode {
+        case 200:
+            let dtos = try JSONDecoder().decode([CoHosterReservationDTO].self, from: data)
+            return dtos.map { CoHosterReservation(dto: $0) }
+        case 404:
+            return []
+        default:
+            let body = String(data: data, encoding: .utf8) ?? ""
+            throw NSError(domain: "CoHosterRepository", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: "Erro \(http.statusCode): \(body)"])
+        }
     }
 
     func updateStatus(id: String, spaceId: String, date: Date, status: CoHosterReservationStatus) async throws {
@@ -25,17 +57,40 @@ struct CoHosterReservationsRepositoryImpl: CoHosterReservationsRepository {
         case .refused: dtoStatus = .refused
         }
         
-        // Format date to ISO8601 string expected by backend (assuming exact match needed)
-        // Backend uses ISO8601 UTC.
-        // Use the ID (which contains the exact raw datetime string) to avoid valid date formatting mismatches
+        // Extract exact datetime string from ID for safer matching
         // ID format: "spaceId|datetime"
         let parts = id.components(separatedBy: "|")
         guard parts.count >= 2 else {
-           throw NSError(domain: "CoHosterReservationsRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "ID da reserva inválido para extração de data."])
+           throw NSError(domain: "CoHosterRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "ID da reserva inválido para extração de data."])
         }
-        let dateString = parts[1] // The exact string stored in DynamoDB
+        let dateString = parts[1]
 
+        guard let url = URL(string: "\(baseURL)/reservations") else {
+             throw NSError(domain: "CoHosterRepository", code: -1, userInfo: [NSLocalizedDescriptionKey: "URL inválida"])
+        }
         
-        try await APIService.updateReservationStatus(spaceId: spaceId, datetime: dateString, status: dtoStatus)
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any] = [
+            "action": "update_status",
+            "spaceId": spaceId,
+            "datetime": dateString,
+            "status": dtoStatus.rawValue
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let http = response as? HTTPURLResponse else {
+            throw NSError(domain: "CoHosterRepository", code: -2, userInfo: [NSLocalizedDescriptionKey: "Resposta inválida"])
+        }
+        
+        guard (200...299).contains(http.statusCode) else {
+            let msg = String(data: data, encoding: .utf8) ?? "Erro \(http.statusCode)"
+            throw NSError(domain: "CoHosterRepository", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
+        }
     }
 }

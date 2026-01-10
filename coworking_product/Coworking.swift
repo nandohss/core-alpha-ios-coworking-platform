@@ -16,6 +16,11 @@ struct Coworking: Identifiable, Decodable {
     let country: String?
     let regras: String?
     let facilities: [String]
+    let hoster: String?
+    let horaInicio: String?
+    let horaFim: String?
+    let diasSemana: [String]?
+    let isFullDay: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id = "spaceId"
@@ -35,5 +40,45 @@ struct Coworking: Identifiable, Decodable {
         case country
         case regras
         case facilities = "amenities"
+        case hoster
+        case horaInicio
+        case horaFim
+        case diasSemana
+        case isFullDay = "diaInteiro"
+    }
+    func toDomain() -> CoworkingSpace {
+        let address = CoworkingAddress(
+            street: street,
+            number: number,
+            complement: complement,
+            district: bairro,
+            city: cidade,
+            state: state,
+            country: country
+        )
+        let pricing = CoworkingPricing(
+            hourlyRate: precoHora,
+            dailyRate: precoDia,
+            isFullDay: isFullDay ?? false
+        )
+        let availability = CoworkingAvailability(
+            startHour: horaInicio,
+            endHour: horaFim,
+            weekdays: diasSemana
+        )
+        return CoworkingSpace(
+            id: id,
+            name: nome,
+            description: descricao,
+            category: categoria,
+            subcategory: subcategoria,
+            imageUrl: imagemUrl,
+            address: address,
+            pricing: pricing,
+            availability: availability,
+            facilities: facilities,
+            rules: regras,
+            hosterId: hoster
+        )
     }
 }

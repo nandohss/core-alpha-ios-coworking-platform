@@ -53,15 +53,15 @@ struct CoHosterReservationDetailView: View {
     
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(viewModel.reservation.spaceName)
+            Text(viewModel.primary.spaceName)
                 .font(.title3).fontWeight(.semibold)
-            Text("\(formattedDateRange(start: viewModel.reservation.startDate, end: viewModel.reservation.endDate))")
+            Text("\(formattedDateRange(start: viewModel.primary.startDate, end: viewModel.primary.endDate))")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             HStack {
-                statusBadge(viewModel.reservation.status)
+                statusBadge(viewModel.primary.status)
                 Spacer()
-                Text(totalBRL(viewModel.reservation.total))
+                Text(totalBRL(viewModel.primary.isFullDay ? (viewModel.primary.dailyRate ?? 0) : viewModel.reservations.reduce(0) { $0 + $1.total }))
                     .font(.headline)
             }
         }
@@ -70,35 +70,41 @@ struct CoHosterReservationDetailView: View {
     private var infoCards: some View {
         VStack(spacing: 12) {
             GroupBox {
-                LabeledContent("Hóspede", value: viewModel.reservation.guestName)
-                LabeledContent("E-mail", value: viewModel.reservation.guestEmail)
-                if let cpf = viewModel.reservation.cpf, !cpf.isEmpty {
+                LabeledContent("Coworker", value: viewModel.primary.guestName)
+                LabeledContent("E-mail", value: viewModel.primary.guestEmail)
+                if let cpf = viewModel.primary.cpf, !cpf.isEmpty {
                     LabeledContent("CPF", value: cpf)
                 }
-                if let cnpj = viewModel.reservation.cnpj, !cnpj.isEmpty {
+                if let cnpj = viewModel.primary.cnpj, !cnpj.isEmpty {
                     LabeledContent("CNPJ", value: cnpj)
                 }
-                if let phone = viewModel.reservation.guestPhone, !phone.isEmpty {
+                if let phone = viewModel.primary.guestPhone, !phone.isEmpty {
                     LabeledContent("Telefone", value: phone)
                 }
             }
             GroupBox {
-                LabeledContent("Espaço", value: viewModel.reservation.spaceName)
-                LabeledContent("Capacidade", value: "\(viewModel.reservation.capacity) pessoas")
-                if let room = viewModel.reservation.roomLabel { LabeledContent("Sala", value: room) }
+                LabeledContent("Espaço", value: viewModel.primary.spaceName)
+                LabeledContent("Capacidade", value: "\(viewModel.primary.capacity) pessoas")
+                if let room = viewModel.primary.roomLabel { LabeledContent("Sala", value: room) }
             }
             GroupBox {
-                LabeledContent("Data", value: formatDay(viewModel.reservation.startDate))
-                LabeledContent("Horário", value: formattedTimeRange(start: viewModel.reservation.startDate, end: viewModel.reservation.endDate))
-                LabeledContent("Criada em", value: formatDate(viewModel.reservation.createdAt))
-                LabeledContent("Código", value: viewModel.reservation.code)
+                LabeledContent("Data", value: formatDay(viewModel.primary.startDate))
+                // Mostrar todos os horários
+                let times = viewModel.reservations
+                    .sorted { $0.startDate < $1.startDate }
+                    .map { formatTimeOnly($0.startDate) }
+                    .joined(separator: ", ")
+                LabeledContent("Horários", value: times)
+                
+                LabeledContent("Criada em", value: formatDate(viewModel.primary.createdAt))
+                LabeledContent("Código", value: viewModel.primary.code)
             }
         }
     }
     
     private var actionSection: some View {
         VStack(spacing: 12) {
-            if viewModel.reservation.status == .pending {
+            if viewModel.primary.status == .pending {
                 // Botões de Ação (Estilo App)
                 HStack(spacing: 16) {
                     
@@ -106,7 +112,7 @@ struct CoHosterReservationDetailView: View {
                     Button {
                         viewModel.requestReject()
                     } label: {
-                        Text("Recusar").bold()
+                        Text("Recusar todos").bold()
                     }
                     .buttonStyle(NavBtnStyle(background: Color.gray.opacity(0.2), foreground: .red))
 
@@ -114,7 +120,7 @@ struct CoHosterReservationDetailView: View {
                     Button {
                         viewModel.requestApprove()
                     } label: {
-                        Text("Aprovar").bold()
+                        Text("Aprovar todos").bold()
                     }
                     .buttonStyle(NavBtnStyle(background: .black, foreground: .white))
                 }
@@ -133,12 +139,14 @@ struct CoHosterReservationDetailView: View {
     private func formattedDateRange(start: Date, end: Date) -> String {
         let df = DateFormatter()
         df.locale = Locale(identifier: "pt_BR")
-        df.dateFormat = "dd/MM/yyyy HH:mm"
-        return "\(df.string(from: start)) – \(df.string(from: end))"
+        df.timeZone = TimeZone(identifier: "America/Sao_Paulo")
+        df.dateFormat = "dd/MM/yyyy"
+        return df.string(from: start) // Use start date only as group is same day
     }
     private func formatDate(_ date: Date) -> String {
         let df = DateFormatter()
         df.locale = Locale(identifier: "pt_BR")
+        df.timeZone = TimeZone(identifier: "America/Sao_Paulo")
         df.dateStyle = .medium
         df.timeStyle = .short
         return df.string(from: date)
@@ -153,41 +161,18 @@ struct CoHosterReservationDetailView: View {
     private func formatDay(_ date: Date) -> String {
         let df = DateFormatter()
         df.locale = Locale(identifier: "pt_BR")
+        df.timeZone = TimeZone(identifier: "America/Sao_Paulo")
         df.dateStyle = .medium
         df.timeStyle = .none
         return df.string(from: date)
     }
-    private func formattedTimeRange(start: Date, end: Date) -> String {
+    private func formatTimeOnly(_ date: Date) -> String {
         let df = DateFormatter()
         df.locale = Locale(identifier: "pt_BR")
+        df.timeZone = TimeZone(identifier: "America/Sao_Paulo")
         df.dateFormat = "HH:mm"
-        return "\(df.string(from: start)) – \(df.string(from: end))"
+        return df.string(from: date)
     }
 }
 
-// MARK: - Preview
-#Preview("CoHosterReservationDetailView") {
-    let mock = CoHosterReservationViewData(
-        id: "rsv_123",
-        spaceId: "space_123",
-        code: "ABC123",
-        spaceName: "Sala de Reuniões A",
-        roomLabel: "Sala 2",
-        capacity: 6,
-        startDate: Date().addingTimeInterval(3600),
-        endDate: Date().addingTimeInterval(7200),
-        createdAt: Date().addingTimeInterval(-86400),
-        total: 199.90,
-        status: .approved,
-        guestName: "João Silva",
-        guestEmail: "joao@example.com",
-        guestPhone: "+55 (11) 91234-5678",
-        cpf: "123.456.789-00",
-        cnpj: nil
-    )
-    let repo = CoHosterReservationsRepositoryImpl()
-    let useCase = UpdateCoHosterReservationStatusUseCaseImpl(repository: repo)
-    let vm = CoHosterReservationDetailVM(reservation: mock, updateUseCase: useCase, onSuccess: {})
-    
-    return CoHosterReservationDetailView(viewModel: vm)
-}
+

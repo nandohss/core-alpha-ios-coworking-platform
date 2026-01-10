@@ -20,6 +20,12 @@ extension CoHosterReservation {
         self.userName = dto.userName
         self.userEmail = dto.userEmail
         self.capacity = dto.capacity
+        self.dateReservation = dto.dateReservation
+        self.totalValue = dto.totalValue
+        self.hourlyRate = dto.hourlyRate
+        self.dailyRate = dto.dailyRate
+        self.isFullDay = dto.isFullDay
+        self.createdAt = dto.createdAt.flatMap { ISO8601DateFormatter().date(from: $0) }
     }
 }
 

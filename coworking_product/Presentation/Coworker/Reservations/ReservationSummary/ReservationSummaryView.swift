@@ -1,3 +1,4 @@
+
 import SwiftUI
 import Amplify
 
@@ -34,7 +35,7 @@ struct ReservationSummaryView: View {
     @State private var voucherCode = ""
     @State private var showSuccessView = false
 
-    @StateObject private var viewModel = ReservaViewModel()
+    @StateObject private var viewModel = ReservationSummaryViewModel()
 
     let paymentMethods: [(label: String, icon: String)] = [
         ("Cartão de Crédito", "creditcard.fill"),
@@ -142,32 +143,20 @@ struct ReservationSummaryView: View {
                             let conflitos = await viewModel.verificarDisponibilidade(
                                 spaceId: coworking.id,
                                 date: dateStr,
-                                hours: hourStrings
+                                hours: hourStrings,
+                                hosterId: coworking.hoster ?? ""
                             )
 
                             if conflitos.isEmpty {
-                                if let attributes = try? await Amplify.Auth.fetchUserAttributes(),
-                                   let userId = attributes.first(where: { $0.key.rawValue == "sub" })?.value {
-
-                                    let reserva = Reserva(
-                                        spaceId_reservation: coworking.id,
-                                        date_reservation: dateStr,
-                                        hours_reservation: hourStrings,
-                                        status: "PENDING",
-                                        userId: userId
-                                    )
-
-                                    await viewModel.enviarReserva(reserva)
-
-                                    if viewModel.status != nil {
-                                        print("✅ Status atualizado: \(viewModel.status!)")
-                                        showSuccessView = true
-                                    } else {
-                                        print("⚠️ Status ainda nulo")
-                                    }
-
-                                } else {
-                                    viewModel.errorMessage = "Usuário não autenticado"
+                                // ViewModel handles Auth and UserID internally now
+                                await viewModel.enviarReserva(
+                                    spaceId: coworking.id,
+                                    date: dateStr,
+                                    hours: hourStrings
+                                )
+                                
+                                if viewModel.status != nil {
+                                    showSuccessView = true
                                 }
                             } else {
                                 viewModel.errorMessage = "Horários já reservados: \(conflitos.joined(separator: ", "))"
@@ -240,4 +229,3 @@ struct ReservationSummaryView: View {
         return formatter.string(from: date)
     }
 }
-
